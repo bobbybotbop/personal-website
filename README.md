@@ -40,10 +40,7 @@ The portfolio is designed to be easily customizable:
 - Modify colors and styling in `app/globals.css`
 - Add or remove sections as needed
 
-## 📄 License
+what is the authenticaiton screen i see on the deployed website?
 
-Open source and available under the [MIT License](LICENSE).
-
----
-
-**Built with ❤️ using [v0.dev](https://v0.dev) by William Chen**
+ 
+--

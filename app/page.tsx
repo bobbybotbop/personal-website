@@ -2,15 +2,61 @@
 
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
+import { VideoCard } from "@/components/video-card"
+import { CustomCursor } from "@/components/custom-cursor"
 
 export default function Home() {
   const [isDark, setIsDark] = useState(true)
   const [activeSection, setActiveSection] = useState("")
   const sectionsRef = useRef<(HTMLElement | null)[]>([])
+  const [hoveredId, setHoveredId] = useState<number | null>(null)
+  const mousePositionRef = useRef({ x: 0, y: 0 })
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", isDark)
   }, [isDark])
+
+  // Track mouse position and check hover on move/scroll
+  useEffect(() => {
+    const checkHoveredCard = () => {
+      const element = document.elementFromPoint(
+        mousePositionRef.current.x,
+        mousePositionRef.current.y
+      )
+      
+      if (element) {
+        // Find the video card element (might be nested)
+        const videoCard = element.closest('[data-video-card-id]') as HTMLElement
+        if (videoCard) {
+          const cardId = parseInt(videoCard.getAttribute('data-video-card-id') || '0')
+          if (cardId > 0) {
+            setHoveredId(cardId)
+            return
+          }
+        }
+      }
+      
+      // If no card is under cursor, clear hover state
+      setHoveredId(null)
+    }
+
+    const handleMouseMove = (e: MouseEvent) => {
+      mousePositionRef.current = { x: e.clientX, y: e.clientY }
+      checkHoveredCard()
+    }
+
+    const handleScroll = () => {
+      checkHoveredCard()
+    }
+
+    window.addEventListener("mousemove", handleMouseMove)
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove)
+      window.removeEventListener("scroll", handleScroll)
+    }
+  }, [])
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -38,6 +84,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background text-foreground relative">
+      <CustomCursor isActive={hoveredId !== null} />
       <nav className="fixed left-8 top-1/2 -translate-y-1/2 z-10 hidden lg:block">
         <div className="flex flex-col gap-4">
           {["intro", "work", "connect"].map((section) => (
@@ -124,17 +171,17 @@ export default function Home() {
         >
           <div className="space-y-12 sm:space-y-16">
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-              <h2 className="text-3xl sm:text-4xl font-light">Selected Work</h2>
+              <h2 className="text-3xl sm:text-4xl font-light">Previous Experience</h2>
               <div className="text-sm text-muted-foreground font-mono">2019 — 2026</div>
             </div>
 
             <div className="space-y-8 sm:space-y-12">
               {[
                 {
-                  year: "2023",
-                  role: "Senior Frontend Engineer",
-                  company: "Vercel",
-                  description: "Leading frontend architecture for developer tools and AI-powered features.",
+                  year: "2026",
+                  role: "Axis Researcher",
+                  company: "Personal Project",
+                  description: "End to End eBay AI automation pipeline that researches, generates listings, lists products",
                   tech: ["React", "TypeScript", "Next.js"],
                 },
                 {
@@ -244,6 +291,58 @@ export default function Home() {
                       <div className="text-sm text-muted-foreground">{social.handle}</div>
                     </div>
                   </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section
+          id="test"
+          ref={(el) => {
+            sectionsRef.current[3] = el
+          }}
+          className="py-20 sm:py-32"
+        >
+          <div className="space-y-12 sm:space-y-16">
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+              <h2 className="text-3xl sm:text-4xl font-light">Test Gallery</h2>
+            </div>
+
+            <div className="container mx-auto">
+              <div className="flex flex-col gap-4">
+                {[
+                  {
+                    id: 1,
+                    title: "TEST PROJECT 1",
+                    category: "TEST",
+                    year: "2026",
+                    thumbnail: "/placeholder-user.jpg",
+                    video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+                  },
+                  {
+                    id: 2,
+                    title: "TEST PROJECT 2",
+                    category: "TEST",
+                    year: "2026",
+                    thumbnail: "/placeholder-user.jpg",
+                    video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+                  },
+                  {
+                    id: 3,
+                    title: "TEST PROJECT 3",
+                    category: "TEST",
+                    year: "2026",
+                    thumbnail: "/placeholder-user.jpg",
+                    video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+                  },
+                ].map((project) => (
+                  <VideoCard
+                    key={project.id}
+                    project={project}
+                    isHovered={hoveredId === project.id}
+                    onHoverChange={(hovered) => setHoveredId(hovered ? project.id : null)}
+                  />
                 ))}
               </div>
             </div>
