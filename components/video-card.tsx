@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from "react"
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { Github, Info } from "lucide-react"
+import { ProjectActionButton } from "@/components/project-action-button"
 
 interface Project {
   id: number
@@ -29,6 +30,7 @@ export function VideoCard({ project, isHovered, onHoverChange }: VideoCardProps)
   const videoRef = useRef<HTMLVideoElement>(null)
   const cardRef = useRef<HTMLDivElement>(null)
   const [isVideoLoaded, setIsVideoLoaded] = useState(false)
+  const [gradientOpacity, setGradientOpacity] = useState(0)
 
   useEffect(() => {
     if (isHovered && videoRef.current) {
@@ -54,6 +56,58 @@ export function VideoCard({ project, isHovered, onHoverChange }: VideoCardProps)
       video.removeEventListener('loadedmetadata', setFirstFrame)
     }
   }, [])
+
+  // Track expansion progress for smooth gradient fade-in
+  useEffect(() => {
+    if (!cardRef.current) return
+
+    const card = cardRef.current
+    const minHeight = 162
+    const maxHeight = 405
+    const heightRange = maxHeight - minHeight
+
+    const updateOpacity = () => {
+      const currentHeight = card.offsetHeight
+      const progress = Math.max(0, Math.min(1, (currentHeight - minHeight) / heightRange))
+      setGradientOpacity(progress)
+    }
+
+    // Update opacity continuously during transition
+    let animationFrame: number
+    const startTime = performance.now()
+    const duration = 800 // Match the transition duration
+
+    const animate = () => {
+      const elapsed = performance.now() - startTime
+      
+      // Update based on actual height
+      updateOpacity()
+      
+      // Continue animating until transition completes
+      if (elapsed < duration) {
+        animationFrame = requestAnimationFrame(animate)
+      } else {
+        // Final update to ensure we reach target state
+        updateOpacity()
+      }
+    }
+
+    // Start animation when hover state changes
+    animationFrame = requestAnimationFrame(animate)
+
+    // Also update on transition end as fallback
+    const handleTransitionEnd = () => {
+      updateOpacity()
+    }
+    card.addEventListener('transitionend', handleTransitionEnd)
+
+    return () => {
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame)
+      }
+      card.removeEventListener('transitionend', handleTransitionEnd)
+    }
+  }, [isHovered])
 
   return (
     <div
@@ -93,12 +147,11 @@ export function VideoCard({ project, isHovered, onHoverChange }: VideoCardProps)
         </video>
       </div>
 
-      {/* Preview overlay - visible by default, disappears on hover */}
+      {/* Preview overlay - animates from center to bottom on hover */}
       <div
         className={cn(
-          "absolute inset-0",
+          "absolute inset-0 z-10",
           "transition-all duration-700",
-          !isHovered ? "opacity-100" : "opacity-0 pointer-events-none",
         )}
       >
         {/* Gradient blur overlay - covers full card for better text readability */}
@@ -110,14 +163,16 @@ export function VideoCard({ project, isHovered, onHoverChange }: VideoCardProps)
           )}
         />
         
-        {/* Content overlay - shows experience information (no tech) */}
+        {/* Content overlay - sticky to bottom during expansion */}
         <div
           className={cn(
-            "absolute inset-0 flex flex-col justify-center pl-8",
-            "transition-all duration-700 ease-out",
-            !isHovered ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0",
+            "absolute left-0 right-0 flex flex-col h-[162px] ",
+            "bottom-0 px-8",
+            "transition-all duration-[800ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
+            isHovered && "pl-8 pb-5",
           )}
         >
+          <div className="my-auto h-fit">
           {/* Year at top */}
           {project.year && (
             <div className="text-white/60 font-mono text-xs tracking-widest uppercase pb-1">
@@ -126,143 +181,85 @@ export function VideoCard({ project, isHovered, onHoverChange }: VideoCardProps)
           )}
           
           {/* Main content */}
-          <div className="text-left">
+          <div className="text-left space-y-4">
             {/* Role and Company */}
-            <div className="space-y-6">
+            <div className="space-y-3">
               {project.role && (
-                <h3 className="text-white font-mono text-lg sm:text-xl tracking-[0.1em] uppercase font-medium leading-tight">
+                <h3 className="text-white font-mono text-lg sm:text-xl uppercase font-medium leading-tight">
                   {project.role}
                 </h3>
               )}
               {project.company && (
-                <p className="text-white/80 font-mono text-sm tracking-[0.15em] uppercase leading-relaxed">
-                  {project.company}
-                </p>
+                <div className="flex items-center gap-4 flex-wrap">
+                  <p className="text-white/80 font-mono text-sm tracking-[0.15em] uppercase leading-relaxed">
+                    {project.company}
+                  </p>
+                  {/* Tech stack - only visible on hover */}
+                  {isHovered && project.tech && project.tech.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {project.tech.map((tech, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-1 text-xs text-white/80 bg-white/10 border border-white/20 rounded-full backdrop-blur-sm"
+                        >
+                          {tech}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
             
-            {/* Description */}
+            {/* Description with buttons */}
             {project.description && (
-              <p className="text-white/70 text-sm leading-tight max-w-xl">
-                {project.description}
-              </p>
+              <div className="flex items-start space-between gap-6 w-full">
+                <p className="text-white/70 text-sm leading-tight flex-[0_0_70%]">
+                  {project.description}
+                </p>
+                <div className="flex items-center justify-center gap-3 flex-[0_0_30%] relative z-20">
+                  <ProjectActionButton
+                    icon={<Github className="size-5" />}
+                    url={project.githubUrl}
+                    expanded={isHovered}
+                  />
+                  <ProjectActionButton
+                    icon={<Info className="size-5" />}
+                    url={project.moreInfoUrl}
+                    expanded={isHovered}
+                  />
+                </div>
+              </div>
             )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Full-width blur gradient overlay - appears on hover */}
+      {/* Full-width blur gradient overlay - fades in gradually as card expands */}
       <div
         className={cn(
-          "absolute inset-0",
-          "transition-all duration-700",
-          isHovered ? "opacity-100" : "opacity-0 pointer-events-none",
+          "absolute inset-0 z-0",
+          gradientOpacity === 0 && "pointer-events-none",
         )}
+        style={{
+          opacity: gradientOpacity,
+          transition: 'opacity 50ms ease-out',
+        }}
       >
-        {/* Gradient blur overlay - starts at 40% and covers 40% of height */}
+        {/* Gradient overlay - starts at 40% and covers 40% of height */}
         <div
           className={cn(
-            "absolute inset-0 backdrop-blur-xl",
+            "absolute inset-0",
             "bg-black/30",
-            "transition-all duration-700 ease-out",
-            isHovered ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0",
+            "transition-transform duration-[800ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
+            isHovered ? "translate-y-0" : "translate-y-8",
           )}
           style={{
             maskImage: "linear-gradient(to bottom, transparent 0%, transparent 40%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.7) 70%, rgba(0,0,0,1) 80%, rgba(0,0,0,1) 100%)",
             WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, transparent 30%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.7) 70%, rgba(0,0,0,1) 80%, rgba(0,0,0,1) 100%)",
           }}
         />
-        
-        {/* Content overlay at bottom */}
-        <div
-          className={cn(
-            "absolute bottom-0 left-0 right-0 p-8",
-            "transition-all duration-700 ease-out",
-            isHovered ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0",
-          )}
-        >
-          <div className="space-y-4 text-left">
-            <div className="space-y-1">
-              {project.year && (
-                <div className="text-white/60 font-mono text-xs tracking-widest uppercase mb-2">
-                  {project.year}
-                </div>
-              )}
-              {project.role && (
-                <h3 className="text-white font-mono text-sm tracking-[0.3em] uppercase font-medium leading-relaxed">
-                  {project.role}
-                </h3>
-              )}
-              {project.company && (
-                <p className="text-white/80 font-mono text-xs tracking-[0.25em] uppercase leading-relaxed">
-                  {project.company}
-                </p>
-              )}
-              {project.description && (
-                <p className="text-white/70 text-sm leading-relaxed mt-2">
-                  {project.description}
-                </p>
-              )}
-              <div className="pt-3 mt-3 border-t border-white/10">
-                {/* Tech stack */}
-                {project.tech && project.tech.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {project.tech.map((tech, index) => (
-                      <span
-                        key={index}
-                        className="px-2 py-1 text-xs text-white/80 bg-white/10 border border-white/20 rounded-full backdrop-blur-sm"
-                      >
-                        {tech}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            {/* Buttons */}
-            <div className="flex gap-3 pt-2">
-              {project.githubUrl && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white backdrop-blur-sm"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    window.open(project.githubUrl, '_blank')
-                  }}
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  GitHub
-                </Button>
-              )}
-              {project.moreInfoUrl && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white backdrop-blur-sm"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    window.open(project.moreInfoUrl, '_blank')
-                  }}
-                >
-                  More Info
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   )

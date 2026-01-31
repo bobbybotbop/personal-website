@@ -167,9 +167,85 @@ export default function Home() {
           </div>
         </header>
 
+        <section
+          id="test"
+          ref={(el) => {
+            sectionsRef.current[1] = el
+          }}
+          className="min-h-screen py-20 sm:py-32 opacity-0"
+        >
+          <div className="space-y-12 sm:space-y-16">
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+              <h2 className="text-3xl sm:text-4xl font-light">Previous Experience</h2>
+              <div className="text-sm text-muted-foreground font-mono">2019 — 2026</div>
+            </div>
+
+            <div className="container mx-auto">
+              <div className="flex flex-col gap-4">
+                {[
+                  {
+                    id: 1,
+                    title: "Axis Researcher",
+                    category: "Personal Project",
+                    year: "2026",
+                    thumbnail: "/placeholder-user.jpg",
+                    video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+                    role: "Axis Researcher",
+                    company: "Personal Project",
+                    description: "End to End eBay AI automation pipeline that researches, generates titles, descriptions and photos, and autonomously lists products.",
+                    tech: ["React", "TypeScript", "Next.js"],
+                  },
+                  {
+                    id: 2,
+                    title: "Frontend Engineer",
+                    category: "Linear",
+                    year: "2022",
+                    thumbnail: "/placeholder-user.jpg",
+                    video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+                    role: "Frontend Engineer",
+                    company: "Linear",
+                    description: "Built performant interfaces for project management and team collaboration.",
+                    tech: ["React", "GraphQL", "Framer Motion"],
+                  },
+                  {
+                    id: 3,
+                    title: "Full Stack Developer",
+                    category: "Stripe",
+                    year: "2021",
+                    thumbnail: "/placeholder-user.jpg",
+                    video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+                    role: "Full Stack Developer",
+                    company: "Stripe",
+                    description: "Developed payment infrastructure and merchant-facing dashboard features.",
+                    tech: ["Ruby", "React", "PostgreSQL"],
+                  },
+                  {
+                    id: 4,
+                    title: "Software Engineer",
+                    category: "Airbnb",
+                    year: "2019",
+                    thumbnail: "/placeholder-user.jpg",
+                    video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+                    role: "Software Engineer",
+                    company: "Airbnb",
+                    description: "Created booking flow optimizations and host management tools.",
+                    tech: ["React", "Node.js", "MySQL"],
+                  },
+                ].map((project) => (
+                  <VideoCard
+                    key={project.id}
+                    project={project}
+                    isHovered={hoveredId === project.id}
+                    onHoverChange={(hovered) => setHoveredId(hovered ? project.id : null)}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
 
         <section id="connect" ref={(el) => {
-          sectionsRef.current[1] = el
+          sectionsRef.current[2] = el
         }} className="py-20 sm:py-32 opacity-0">
           <div className="grid lg:grid-cols-2 gap-12 sm:gap-16">
             <div className="space-y-6 sm:space-y-8">
@@ -219,83 +295,6 @@ export default function Home() {
                       <div className="text-sm text-muted-foreground">{social.handle}</div>
                     </div>
                   </Link>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section
-          id="test"
-          ref={(el) => {
-            sectionsRef.current[2] = el
-          }}
-          className="min-h-screen py-20 sm:py-32 opacity-0"
-        >
-          <div className="space-y-12 sm:space-y-16">
-            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-              <h2 className="text-3xl sm:text-4xl font-light">Previous Experience</h2>
-              <div className="text-sm text-muted-foreground font-mono">2019 — 2026</div>
-            </div>
-
-            <div className="container mx-auto">
-              <div className="flex flex-col gap-4">
-                {[
-                  {
-                    id: 1,
-                    title: "Axis Researcher",
-                    category: "Personal Project",
-                    year: "2026",
-                    thumbnail: "/placeholder-user.jpg",
-                    video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-                    role: "Axis Researcher",
-                    company: "Personal Project",
-                    description: "End to End eBay AI automation pipeline that researches, generates listings, lists products",
-                    tech: ["React", "TypeScript", "Next.js"],
-                  },
-                  {
-                    id: 2,
-                    title: "Frontend Engineer",
-                    category: "Linear",
-                    year: "2022",
-                    thumbnail: "/placeholder-user.jpg",
-                    video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
-                    role: "Frontend Engineer",
-                    company: "Linear",
-                    description: "Built performant interfaces for project management and team collaboration.",
-                    tech: ["React", "GraphQL", "Framer Motion"],
-                  },
-                  {
-                    id: 3,
-                    title: "Full Stack Developer",
-                    category: "Stripe",
-                    year: "2021",
-                    thumbnail: "/placeholder-user.jpg",
-                    video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
-                    role: "Full Stack Developer",
-                    company: "Stripe",
-                    description: "Developed payment infrastructure and merchant-facing dashboard features.",
-                    tech: ["Ruby", "React", "PostgreSQL"],
-                  },
-                  {
-                    id: 4,
-                    title: "Software Engineer",
-                    category: "Airbnb",
-                    year: "2019",
-                    thumbnail: "/placeholder-user.jpg",
-                    video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
-                    role: "Software Engineer",
-                    company: "Airbnb",
-                    description: "Created booking flow optimizations and host management tools.",
-                    tech: ["React", "Node.js", "MySQL"],
-                  },
-                ].map((project) => (
-                  <VideoCard
-                    key={project.id}
-                    project={project}
-                    isHovered={hoveredId === project.id}
-                    onHoverChange={(hovered) => setHoveredId(hovered ? project.id : null)}
-                  />
                 ))}
               </div>
             </div>
