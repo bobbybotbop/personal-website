@@ -13,6 +13,10 @@ interface Project {
   video: string
   githubUrl?: string
   moreInfoUrl?: string
+  role?: string
+  company?: string
+  description?: string
+  tech?: string[]
 }
 
 interface VideoCardProps {
@@ -89,7 +93,65 @@ export function VideoCard({ project, isHovered, onHoverChange }: VideoCardProps)
         </video>
       </div>
 
-      {/* Full-width blur gradient overlay */}
+      {/* Preview overlay - visible by default, disappears on hover */}
+      <div
+        className={cn(
+          "absolute inset-0",
+          "transition-all duration-700",
+          !isHovered ? "opacity-100" : "opacity-0 pointer-events-none",
+        )}
+      >
+        {/* Gradient blur overlay - covers full card for better text readability */}
+        <div
+          className={cn(
+            "absolute inset-0",
+            "bg-black/50",
+            !isHovered ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0",
+          )}
+        />
+        
+        {/* Content overlay - shows experience information (no tech) */}
+        <div
+          className={cn(
+            "absolute inset-0 flex flex-col justify-center pl-8",
+            "transition-all duration-700 ease-out",
+            !isHovered ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0",
+          )}
+        >
+          {/* Year at top */}
+          {project.year && (
+            <div className="text-white/60 font-mono text-xs tracking-widest uppercase pb-1">
+              {project.year}
+            </div>
+          )}
+          
+          {/* Main content */}
+          <div className="text-left">
+            {/* Role and Company */}
+            <div className="space-y-6">
+              {project.role && (
+                <h3 className="text-white font-mono text-lg sm:text-xl tracking-[0.1em] uppercase font-medium leading-tight">
+                  {project.role}
+                </h3>
+              )}
+              {project.company && (
+                <p className="text-white/80 font-mono text-sm tracking-[0.15em] uppercase leading-relaxed">
+                  {project.company}
+                </p>
+              )}
+            </div>
+            
+            {/* Description */}
+            {project.description && (
+              <p className="text-white/70 text-sm leading-tight max-w-xl">
+                {project.description}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Full-width blur gradient overlay - appears on hover */}
       <div
         className={cn(
           "absolute inset-0",
@@ -121,14 +183,40 @@ export function VideoCard({ project, isHovered, onHoverChange }: VideoCardProps)
         >
           <div className="space-y-4 text-left">
             <div className="space-y-1">
-              <h3 className="text-white font-mono text-sm tracking-[0.3em] uppercase font-medium leading-relaxed">
-                {project.title}
-              </h3>
-              <p className="text-white/80 font-mono text-xs tracking-[0.25em] uppercase leading-relaxed">
-                {project.category}
-              </p>
+              {project.year && (
+                <div className="text-white/60 font-mono text-xs tracking-widest uppercase mb-2">
+                  {project.year}
+                </div>
+              )}
+              {project.role && (
+                <h3 className="text-white font-mono text-sm tracking-[0.3em] uppercase font-medium leading-relaxed">
+                  {project.role}
+                </h3>
+              )}
+              {project.company && (
+                <p className="text-white/80 font-mono text-xs tracking-[0.25em] uppercase leading-relaxed">
+                  {project.company}
+                </p>
+              )}
+              {project.description && (
+                <p className="text-white/70 text-sm leading-relaxed mt-2">
+                  {project.description}
+                </p>
+              )}
               <div className="pt-3 mt-3 border-t border-white/10">
-                <p className="text-white/60 font-mono text-xs tracking-widest">{project.year}</p>
+                {/* Tech stack */}
+                {project.tech && project.tech.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {project.tech.map((tech, index) => (
+                      <span
+                        key={index}
+                        className="px-2 py-1 text-xs text-white/80 bg-white/10 border border-white/20 rounded-full backdrop-blur-sm"
+                      >
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             

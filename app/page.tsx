@@ -64,7 +64,9 @@ export default function Home() {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add("animate-fade-in-up")
-            setActiveSection(entry.target.id)
+            // Map "test" section to "work" for navigation consistency
+            const sectionId = entry.target.id === "test" ? "work" : entry.target.id
+            setActiveSection(sectionId)
           }
         })
       },
@@ -90,9 +92,12 @@ export default function Home() {
           {["intro", "work", "connect"].map((section) => (
             <button
               key={section}
-              onClick={() => document.getElementById(section)?.scrollIntoView({ behavior: "smooth" })}
+              onClick={() => {
+                const targetId = section === "work" ? "test" : section
+                document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth" })
+              }}
               className={`w-2 h-8 rounded-full transition-all duration-500 ${
-                activeSection === section ? "bg-foreground" : "bg-muted-foreground/30 hover:bg-muted-foreground/60"
+                activeSection === section || (section === "work" && activeSection === "test") ? "bg-foreground" : "bg-muted-foreground/30 hover:bg-muted-foreground/60"
               }`}
               aria-label={`Navigate to ${section}`}
             />
@@ -162,86 +167,9 @@ export default function Home() {
           </div>
         </header>
 
-        <section
-          id="work"
-          ref={(el) => {
-            sectionsRef.current[1] = el
-          }}
-          className="min-h-screen py-20 sm:py-32 opacity-0"
-        >
-          <div className="space-y-12 sm:space-y-16">
-            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-              <h2 className="text-3xl sm:text-4xl font-light">Previous Experience</h2>
-              <div className="text-sm text-muted-foreground font-mono">2019 — 2026</div>
-            </div>
-
-            <div className="space-y-8 sm:space-y-12">
-              {[
-                {
-                  year: "2026",
-                  role: "Axis Researcher",
-                  company: "Personal Project",
-                  description: "End to End eBay AI automation pipeline that researches, generates listings, lists products",
-                  tech: ["React", "TypeScript", "Next.js"],
-                },
-                {
-                  year: "2022",
-                  role: "Frontend Engineer",
-                  company: "Linear",
-                  description: "Built performant interfaces for project management and team collaboration.",
-                  tech: ["React", "GraphQL", "Framer Motion"],
-                },
-                {
-                  year: "2021",
-                  role: "Full Stack Developer",
-                  company: "Stripe",
-                  description: "Developed payment infrastructure and merchant-facing dashboard features.",
-                  tech: ["Ruby", "React", "PostgreSQL"],
-                },
-                {
-                  year: "2019",
-                  role: "Software Engineer",
-                  company: "Airbnb",
-                  description: "Created booking flow optimizations and host management tools.",
-                  tech: ["React", "Node.js", "MySQL"],
-                },
-              ].map((job, index) => (
-                <div
-                  key={index}
-                  className="group grid lg:grid-cols-12 gap-4 sm:gap-8 py-6 sm:py-8 border-b border-border/50 hover:border-border transition-colors duration-500"
-                >
-                  <div className="lg:col-span-2">
-                    <div className="text-xl sm:text-2xl font-light text-muted-foreground group-hover:text-foreground transition-colors duration-500">
-                      {job.year}
-                    </div>
-                  </div>
-
-                  <div className="lg:col-span-6 space-y-3">
-                    <div>
-                      <h3 className="text-lg sm:text-xl font-medium">{job.role}</h3>
-                      <div className="text-muted-foreground">{job.company}</div>
-                    </div>
-                    <p className="text-muted-foreground leading-relaxed max-w-lg">{job.description}</p>
-                  </div>
-
-                  <div className="lg:col-span-4 flex flex-wrap gap-2 lg:justify-end mt-2 lg:mt-0">
-                    {job.tech.map((tech) => (
-                      <span
-                        key={tech}
-                        className="px-2 py-1 text-xs text-muted-foreground rounded group-hover:border-muted-foreground/50 transition-colors duration-500"
-                      >
-                        {tech}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
 
         <section id="connect" ref={(el) => {
-          sectionsRef.current[2] = el
+          sectionsRef.current[1] = el
         }} className="py-20 sm:py-32 opacity-0">
           <div className="grid lg:grid-cols-2 gap-12 sm:gap-16">
             <div className="space-y-6 sm:space-y-8">
@@ -300,13 +228,14 @@ export default function Home() {
         <section
           id="test"
           ref={(el) => {
-            sectionsRef.current[3] = el
+            sectionsRef.current[2] = el
           }}
-          className="py-20 sm:py-32"
+          className="min-h-screen py-20 sm:py-32 opacity-0"
         >
           <div className="space-y-12 sm:space-y-16">
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-              <h2 className="text-3xl sm:text-4xl font-light">Test Gallery</h2>
+              <h2 className="text-3xl sm:text-4xl font-light">Previous Experience</h2>
+              <div className="text-sm text-muted-foreground font-mono">2019 — 2026</div>
             </div>
 
             <div className="container mx-auto">
@@ -314,27 +243,51 @@ export default function Home() {
                 {[
                   {
                     id: 1,
-                    title: "TEST PROJECT 1",
-                    category: "TEST",
+                    title: "Axis Researcher",
+                    category: "Personal Project",
                     year: "2026",
                     thumbnail: "/placeholder-user.jpg",
                     video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+                    role: "Axis Researcher",
+                    company: "Personal Project",
+                    description: "End to End eBay AI automation pipeline that researches, generates listings, lists products",
+                    tech: ["React", "TypeScript", "Next.js"],
                   },
                   {
                     id: 2,
-                    title: "TEST PROJECT 2",
-                    category: "TEST",
-                    year: "2026",
+                    title: "Frontend Engineer",
+                    category: "Linear",
+                    year: "2022",
                     thumbnail: "/placeholder-user.jpg",
                     video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+                    role: "Frontend Engineer",
+                    company: "Linear",
+                    description: "Built performant interfaces for project management and team collaboration.",
+                    tech: ["React", "GraphQL", "Framer Motion"],
                   },
                   {
                     id: 3,
-                    title: "TEST PROJECT 3",
-                    category: "TEST",
-                    year: "2026",
+                    title: "Full Stack Developer",
+                    category: "Stripe",
+                    year: "2021",
                     thumbnail: "/placeholder-user.jpg",
                     video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+                    role: "Full Stack Developer",
+                    company: "Stripe",
+                    description: "Developed payment infrastructure and merchant-facing dashboard features.",
+                    tech: ["Ruby", "React", "PostgreSQL"],
+                  },
+                  {
+                    id: 4,
+                    title: "Software Engineer",
+                    category: "Airbnb",
+                    year: "2019",
+                    thumbnail: "/placeholder-user.jpg",
+                    video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+                    role: "Software Engineer",
+                    company: "Airbnb",
+                    description: "Created booking flow optimizations and host management tools.",
+                    tech: ["React", "Node.js", "MySQL"],
                   },
                 ].map((project) => (
                   <VideoCard
