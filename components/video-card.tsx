@@ -55,7 +55,7 @@ export function VideoCard({ project, isHovered, onHoverChange }: VideoCardProps)
     }
   }, [])
 
-  // Track expansion progress for smooth gradient fade-in
+  // Optimized gradient opacity update - only on transition end instead of continuous RAF loop
   useEffect(() => {
     if (!cardRef.current) return
 
@@ -70,39 +70,20 @@ export function VideoCard({ project, isHovered, onHoverChange }: VideoCardProps)
       setGradientOpacity(progress)
     }
 
-    // Update opacity continuously during transition
-    let animationFrame: number
-    const startTime = performance.now()
-    const duration = 800 // Match the transition duration
+    // Update immediately on hover change
+    updateOpacity()
 
-    const animate = () => {
-      const elapsed = performance.now() - startTime
-      
-      // Update based on actual height
-      updateOpacity()
-      
-      // Continue animating until transition completes
-      if (elapsed < duration) {
-        animationFrame = requestAnimationFrame(animate)
-      } else {
-        // Final update to ensure we reach target state
+    // Update on transition end for final state
+    const handleTransitionEnd = (e: TransitionEvent) => {
+      // Only handle transitions on the card element itself
+      if (e.target === card && e.propertyName === 'height') {
         updateOpacity()
       }
     }
-
-    // Start animation when hover state changes
-    animationFrame = requestAnimationFrame(animate)
-
-    // Also update on transition end as fallback
-    const handleTransitionEnd = () => {
-      updateOpacity()
-    }
+    
     card.addEventListener('transitionend', handleTransitionEnd)
 
     return () => {
-      if (animationFrame) {
-        cancelAnimationFrame(animationFrame)
-      }
       card.removeEventListener('transitionend', handleTransitionEnd)
     }
   }, [isHovered])
@@ -113,25 +94,29 @@ export function VideoCard({ project, isHovered, onHoverChange }: VideoCardProps)
       className={cn(
         "group relative rounded-[2.5rem] overflow-hidden",
         "cursor-none",
-        "transition-all duration-[800ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
         "w-full",
+        "will-change-transform",
         isHovered ? "h-[405px]" : "h-[162px] opacity-90",
       )}
-      style={isHovered ? {
-        boxShadow: "0 25px 50px -12px rgba(255, 255, 255, 0.4), 0 0 60px rgba(255, 255, 255, 0.2), 0 0 100px rgba(255, 255, 255, 0.1)"
-      } : undefined}
+      style={{
+        transition: "height 800ms cubic-bezier(0.4,0,0.2,1), opacity 800ms cubic-bezier(0.4,0,0.2,1), box-shadow 800ms cubic-bezier(0.4,0,0.2,1)",
+        boxShadow: isHovered 
+          ? "0 25px 50px -12px rgba(255, 255, 255, 0.4), 0 0 60px rgba(255, 255, 255, 0.2), 0 0 100px rgba(255, 255, 255, 0.1)"
+          : undefined
+      }}
       onMouseEnter={() => onHoverChange(true)}
       onMouseLeave={() => onHoverChange(false)}
       data-video-card-id={project.id}
     >
       {/* Video with poster - shows first frame as thumbnail */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 will-change-transform">
         <video
           ref={videoRef}
           poster={project.thumbnail || undefined}
           className={cn(
             "w-full h-full object-cover transition-all duration-700",
-            !isHovered && "grayscale brightness-75 blur-[2px]",
+            // Only apply blur when NOT hovered and NOT transitioning (reduces GPU load)
+            !isHovered && "grayscale brightness-75",
           )}
           loop
           muted
@@ -201,7 +186,7 @@ export function VideoCard({ project, isHovered, onHoverChange }: VideoCardProps)
                       {project.tech.map((tech, index) => (
                         <span
                           key={index}
-                          className="px-2 py-1 text-xs text-white/80 bg-white/10 border border-white/20 rounded-full backdrop-blur-sm"
+                          className="px-2 py-1 text-xs text-white/80 bg-white/10 border border-white/20 rounded-full"
                         >
                           {tech}
                         </span>
@@ -237,21 +222,21 @@ export function VideoCard({ project, isHovered, onHoverChange }: VideoCardProps)
         </div>
       </div>
 
-      {/* Full-width blur gradient overlay - fades in gradually as card expands */}
+      {/* Full-width gradient overlay - fades in gradually as card expands */}
       <div
         className={cn(
-          "absolute inset-0 z-0",
+          "absolute inset-0 z-0 will-change-opacity",
           gradientOpacity === 0 && "pointer-events-none",
         )}
         style={{
           opacity: gradientOpacity,
-          transition: 'opacity 50ms ease-out',
+          transition: 'opacity 100ms ease-out',
         }}
       >
         {/* Gradient overlay - starts at 40% and covers 40% of height */}
         <div
           className={cn(
-            "absolute inset-0",
+            "absolute inset-0 will-change-transform",
             "bg-black/30",
             "transition-transform duration-[800ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
             isHovered ? "translate-y-0" : "translate-y-8",

@@ -16,8 +16,11 @@ export default function Home() {
     document.documentElement.classList.toggle("dark", isDark)
   }, [isDark])
 
-  // Track mouse position and check hover on move/scroll
+  // Track mouse position and check hover on move/scroll (throttled for performance)
   useEffect(() => {
+    let rafId: number | null = null
+    let pendingCheck = false
+
     const checkHoveredCard = () => {
       const element = document.elementFromPoint(
         mousePositionRef.current.x,
@@ -31,6 +34,7 @@ export default function Home() {
           const cardId = parseInt(videoCard.getAttribute('data-video-card-id') || '0')
           if (cardId > 0) {
             setHoveredId(cardId)
+            pendingCheck = false
             return
           }
         }
@@ -38,23 +42,37 @@ export default function Home() {
       
       // If no card is under cursor, clear hover state
       setHoveredId(null)
+      pendingCheck = false
+    }
+
+    const throttledCheck = () => {
+      if (!pendingCheck) {
+        pendingCheck = true
+        rafId = requestAnimationFrame(() => {
+          checkHoveredCard()
+          rafId = null
+        })
+      }
     }
 
     const handleMouseMove = (e: MouseEvent) => {
       mousePositionRef.current = { x: e.clientX, y: e.clientY }
-      checkHoveredCard()
+      throttledCheck()
     }
 
     const handleScroll = () => {
-      checkHoveredCard()
+      throttledCheck()
     }
 
-    window.addEventListener("mousemove", handleMouseMove)
+    window.addEventListener("mousemove", handleMouseMove, { passive: true })
     window.addEventListener("scroll", handleScroll, { passive: true })
     
     return () => {
       window.removeEventListener("mousemove", handleMouseMove)
       window.removeEventListener("scroll", handleScroll)
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId)
+      }
     }
   }, [])
 
@@ -193,7 +211,7 @@ export default function Home() {
           <div className="space-y-12 sm:space-y-16">
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
               <h2 className="text-3xl sm:text-4xl font-light">Previous Experience</h2>
-              <div className="text-sm text-muted-foreground font-mono">2019 — 2026</div>
+              <div className="text-sm text-muted-foreground font-mono">2025 — 2026</div>
             </div>
 
             <div className="w-full">
