@@ -7,14 +7,12 @@ import { ProjectActionButton } from "@/components/project-action-button"
 
 interface Project {
   id: number
-  title: string
-  category: string
   year: string
   thumbnail: string
   video: string
   githubUrl?: string
   moreInfoUrl?: string
-  role?: string
+  projectName?: string
   company?: string
   description?: string
   tech?: string[]
@@ -117,8 +115,11 @@ export function VideoCard({ project, isHovered, onHoverChange }: VideoCardProps)
         "cursor-none",
         "transition-all duration-[800ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
         "w-full",
-        isHovered ? "h-[405px] shadow-2xl shadow-white/10" : "h-[162px] opacity-90",
+        isHovered ? "h-[405px]" : "h-[162px] opacity-90",
       )}
+      style={isHovered ? {
+        boxShadow: "0 25px 50px -12px rgba(255, 255, 255, 0.4), 0 0 60px rgba(255, 255, 255, 0.2), 0 0 100px rgba(255, 255, 255, 0.1)"
+      } : undefined}
       onMouseEnter={() => onHoverChange(true)}
       onMouseLeave={() => onHoverChange(false)}
       data-video-card-id={project.id}
@@ -182,11 +183,11 @@ export function VideoCard({ project, isHovered, onHoverChange }: VideoCardProps)
           
           {/* Main content */}
           <div className="text-left space-y-4">
-            {/* Role and Company */}
+            {/* Project Name and Company */}
             <div className="space-y-3">
-              {project.role && (
+              {project.projectName && (
                 <h3 className="text-white font-mono text-lg sm:text-xl uppercase font-medium leading-tight">
-                  {project.role}
+                  {project.projectName}
                 </h3>
               )}
               {project.company && (
@@ -217,17 +218,17 @@ export function VideoCard({ project, isHovered, onHoverChange }: VideoCardProps)
                 <p className="text-white/70 text-sm leading-tight flex-[0_0_70%]">
                   {project.description}
                 </p>
-                <div className="flex items-center justify-center gap-3 flex-[0_0_30%] relative z-20">
+                <div className="flex items-center justify-end gap-3 flex-[0_0_30%] relative z-20 pr-4">
                   <ProjectActionButton
                     icon={<Github className="size-5" />}
                     url={project.githubUrl}
                     expanded={isHovered}
                   />
-                  <ProjectActionButton
+                  {/* <ProjectActionButton
                     icon={<Info className="size-5" />}
                     url={project.moreInfoUrl}
                     expanded={isHovered}
-                  />
+                  /> */}
                 </div>
               </div>
             )}

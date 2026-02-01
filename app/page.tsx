@@ -63,6 +63,7 @@ export default function Home() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
+            entry.target.classList.remove("opacity-0")
             entry.target.classList.add("animate-fade-in-up")
             // Map "test" section to "work" for navigation consistency
             const sectionId = entry.target.id === "test" ? "work" : entry.target.id
@@ -70,14 +71,29 @@ export default function Home() {
           }
         })
       },
-      { threshold: 0.3, rootMargin: "0px 0px -20% 0px" },
+      { threshold: 0.1, rootMargin: "0px 0px -10% 0px" },
     )
 
-    sectionsRef.current.forEach((section) => {
-      if (section) observer.observe(section)
-    })
+    // Use setTimeout to ensure refs are set after render
+    const timeoutId = setTimeout(() => {
+      sectionsRef.current.forEach((section) => {
+        if (section) {
+          observer.observe(section)
+          // Check if section is already in viewport
+          const rect = section.getBoundingClientRect()
+          const isInViewport = rect.top < window.innerHeight && rect.bottom > 0
+          if (isInViewport) {
+            section.classList.remove("opacity-0")
+            section.classList.add("animate-fade-in-up")
+          }
+        }
+      })
+    }, 0)
 
-    return () => observer.disconnect()
+    return () => {
+      clearTimeout(timeoutId)
+      observer.disconnect()
+    }
   }, [])
 
   const toggleTheme = () => {
@@ -180,56 +196,96 @@ export default function Home() {
               <div className="text-sm text-muted-foreground font-mono">2019 — 2026</div>
             </div>
 
-            <div className="container mx-auto">
+            <div className="w-full">
               <div className="flex flex-col gap-4">
                 {[
                   {
                     id: 1,
-                    title: "Axis Researcher",
-                    category: "Personal Project",
                     year: "2026",
-                    thumbnail: "/placeholder-user.jpg",
-                    video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-                    role: "Axis Researcher",
+                    projectName: "AXIS RESEARCHER",
                     company: "Personal Project",
                     description: "End to End eBay AI automation pipeline that researches, generates titles, descriptions and photos, and autonomously lists products.",
-                    tech: ["React", "TypeScript", "Next.js"],
+                    thumbnail: "/placeholder-user.jpg",
+                    video: "/videos/AxisEdited.mp4",
+                    githubUrl: "https://github.com/bobbybotbop/AxisResearcher",
+                    tech: ["Python", "eBay API", "AI", "Automation", "Image Generation"],
                   },
                   {
                     id: 2,
-                    title: "Frontend Engineer",
-                    category: "Linear",
-                    year: "2022",
+                    year: "2025",
+                    projectName: "AnyCard",
+                    company: "Cornell DTI Trends Final Project",
+                    description: "Full-stack platform w/ AI-generated trading cards via Claude API, Three.js 3D pack animations, image search integration & trading.",
                     thumbnail: "/placeholder-user.jpg",
-                    video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
-                    role: "Frontend Engineer",
-                    company: "Linear",
-                    description: "Built performant interfaces for project management and team collaboration.",
-                    tech: ["React", "GraphQL", "Framer Motion"],
+                    video: "/videos/AnyCardEdited.mp4",
+                    githubUrl: "https://github.com/bobbybotbop/AnyCard",
+                    tech: ["React", "Three.js", "Claude API", "Node.js", "Full-stack"],
                   },
                   {
                     id: 3,
-                    title: "Full Stack Developer",
-                    category: "Stripe",
-                    year: "2021",
+                    year: "2025",
+                    projectName: "Memory Box",
+                    company: "Hawl Technologies Intern",
+                    description: "Full-stack Chrome extension aggregating multi-platform LLM conversations with semantic search, hallucination detection & cloud sync.",
                     thumbnail: "/placeholder-user.jpg",
-                    video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
-                    role: "Full Stack Developer",
-                    company: "Stripe",
-                    description: "Developed payment infrastructure and merchant-facing dashboard features.",
-                    tech: ["Ruby", "React", "PostgreSQL"],
+                    video: "/videos/memoryboxEdited.mp4",
+                    githubUrl: "",
+                    tech: ["Chrome Extension", "TypeScript", "LLM", "Semantic Search", "Cloud Sync"],
                   },
                   {
                     id: 4,
-                    title: "Software Engineer",
-                    category: "Airbnb",
-                    year: "2019",
+                    year: "2025",
+                    projectName: "BOND BUDDY",
+                    company: "Personal Project",
+                    description: "Desktop pet app built with Electron & React featuring draggable UI, tray integration, and custom image/GIF support.",
                     thumbnail: "/placeholder-user.jpg",
-                    video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
-                    role: "Software Engineer",
-                    company: "Airbnb",
-                    description: "Created booking flow optimizations and host management tools.",
-                    tech: ["React", "Node.js", "MySQL"],
+                    video: "/videos/bondBuddyEdited.mp4",
+                    githubUrl: "https://github.com/bobbybotbop/BondBuddy",
+                    tech: ["Electron", "React", "TypeScript", "Desktop App"],
+                  },
+                  {
+                    id: 5,
+                    year: "2025",
+                    projectName: "DataVision",
+                    company: "Bitcamp Hackathon Project",
+                    description: "Agentic data platform using LangGraph + Gemini API for automated statistical analysis, hypothesis testing & real-time visualization.",
+                    thumbnail: "/placeholder-user.jpg",
+                    video: "/videos/dataVisionEdited.mp4",
+                    githubUrl: "https://github.com/aadia1234/DataVision",
+                    tech: ["Python", "LangGraph", "Gemini API", "Data Visualization", "Statistics"],
+                  },
+                  {
+                    id: 6,
+                    year: "2025",
+                    projectName: "CORNELL HOBBYSWAP",
+                    company: "Personal Project",
+                    description: "Full-stack social platform with recommendation algorithms, user profiles, and real-time messaging for skill exchange.",
+                    thumbnail: "/placeholder-user.jpg",
+                    video: "/videos/hobbyswapEdited.mp4",
+                    githubUrl: "https://github.com/bobbybotbop/HobbySwap",
+                    tech: ["React", "Node.js", "WebSocket", "Database", "Recommendation Algorithms"],
+                  },
+                  {
+                    id: 7,
+                    year: "2025",
+                    projectName: "PRETTIER DESKTOP TASK MANAGER",
+                    company: "Personal Project",
+                    description: "System monitoring desktop app with real-time metrics visualization and animated UI inspired by Windows Task Manager.",
+                    thumbnail: "/placeholder-user.jpg",
+                    video: "/videos/taskmanageredited.mp4",
+                    githubUrl: "https://github.com/bobbybotbop/SystemVisualizer",
+                    tech: ["Electron", "React", "System Monitoring", "Data Visualization"],
+                  },
+                  {
+                    id: 8,
+                    year: "2025",
+                    projectName: "MOVIE VIEWER",
+                    company: "Personal Project",
+                    description: "React application with TMDb API integration featuring real-time data fetching and full-text search functionality.",
+                    thumbnail: "/placeholder-user.jpg",
+                    video: "/videos/movieEdited.mp4",
+                    githubUrl: "https://github.com/bobbybotbop/movieProjectJS",
+                    tech: ["React", "TMDb API", "JavaScript", "API Integration"],
                   },
                 ].map((project) => (
                   <VideoCard
@@ -246,7 +302,7 @@ export default function Home() {
 
         <section id="connect" ref={(el) => {
           sectionsRef.current[2] = el
-        }} className="py-20 sm:py-32 opacity-0">
+        }} className="py-10 sm:py-10 opacity-0">
           <div className="grid lg:grid-cols-2 gap-12 sm:gap-16">
             <div className="space-y-6 sm:space-y-8">
               <h2 className="text-3xl sm:text-4xl font-light">Let's Connect</h2>
@@ -256,12 +312,12 @@ export default function Home() {
                   Always interested in new opportunities, collaborations, and conversations about technology and design.
                 </p>
 
-                {/* <div className="space-y-4">
+                <div className="space-y-4">
                   <Link
-                    href="mailto:test@example.com"
+                    href="mailto:williambillychen@gmail.com"
                     className="group flex items-center gap-3 text-foreground hover:text-muted-foreground transition-colors duration-300"
                   >
-                    <span className="text-base sm:text-lg">test@example.com</span>
+                    <span className="text-base sm:text-lg">williambillychen@gmail.com</span>
                     <svg
                       className="w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-300"
                       fill="none"
@@ -271,7 +327,7 @@ export default function Home() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                     </svg>
                   </Link>
-                </div> */}
+                </div>
               </div>
             </div>
 
@@ -286,7 +342,7 @@ export default function Home() {
                   <Link
                     key={social.name}
                     href={social.url}
-                    className="group p-4 border border-border rounded-lg hover:border-muted-foreground/50 transition-all duration-300 hover:shadow-sm"
+                    className="group p-4 border border-border rounded-lg hover:border-muted-foreground/50 transition-all duration-300 glow-on-hover"
                   >
                     <div className="space-y-2">
                       <div className="text-foreground group-hover:text-muted-foreground transition-colors duration-300">
@@ -301,8 +357,8 @@ export default function Home() {
           </div>
         </section>
 
-        <footer className="py-12 sm:py-16 border-t border-border">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 sm:gap-8">
+        <footer className=" border-t border-border">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 sm:gap-8 pt-5 pb-30">
             <div className="space-y-2">
               <div className="text-sm text-muted-foreground">William Chen</div>
             </div>
