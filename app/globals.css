@@ -135,4 +135,20 @@
       transform: translateY(0);
     }
   }
+
+  .glow-on-hover {
+    position: relative;
+  }
+
+  .glow-on-hover:hover {
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3),
+                0 0 40px rgba(255, 255, 255, 0.2),
+                0 0 60px rgba(255, 255, 255, 0.1);
+  }
+
+  .dark .glow-on-hover:hover {
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.4),
+                0 0 40px rgba(255, 255, 255, 0.3),
+                0 0 60px rgba(255, 255, 255, 0.2);
+  }
 }

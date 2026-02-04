@@ -211,7 +211,10 @@ export function VideoCard({ project, isHovered, onHoverChange }: VideoCardProps)
             {/* Description with buttons */}
             {project.description && (
               <div className="flex items-start space-between gap-6 w-full">
-                <p className="text-white/70 text-sm leading-tight flex-[0_0_70%]">
+                <p className={cn(
+                  "text-white/70 text-sm leading-tight flex-[0_0_70%]",
+                  !isHovered && "line-clamp-2 md:line-clamp-none"
+                )}>
                   {project.description}
                 </p>
                 <div className="flex items-center justify-end gap-3 flex-[0_0_30%] relative z-20 pr-4">
