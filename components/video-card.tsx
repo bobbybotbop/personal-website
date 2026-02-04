@@ -122,7 +122,7 @@ export function VideoCard({ project, isHovered, onHoverChange }: VideoCardProps)
             loop
             muted
             playsInline
-            preload="none"
+            preload="metadata"
             onLoadedData={() => {
               setIsVideoLoaded(true)
               if (videoRef.current && !isHovered) {
