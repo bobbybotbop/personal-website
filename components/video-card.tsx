@@ -30,30 +30,30 @@ export function VideoCard({ project, isHovered, onHoverChange }: VideoCardProps)
   const [isVideoLoaded, setIsVideoLoaded] = useState(false)
   const [gradientOpacity, setGradientOpacity] = useState(0)
 
+  // Load video source only when hovered to reduce bandwidth usage
+  const [shouldLoadVideo, setShouldLoadVideo] = useState(false)
+
   useEffect(() => {
-    if (isHovered && videoRef.current) {
-      videoRef.current.currentTime = 0
-      videoRef.current.play().catch(() => {})
-    } else if (videoRef.current) {
-      videoRef.current.pause()
-      videoRef.current.currentTime = 0
+    if (isHovered) {
+      setShouldLoadVideo(true)
     }
   }, [isHovered])
 
-  // Set video to first frame when loaded
   useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
-
-    const setFirstFrame = () => {
-      video.currentTime = 0
+    if (isHovered && videoRef.current && shouldLoadVideo) {
+      // Small delay to ensure video element is ready
+      const timer = setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.currentTime = 0
+          videoRef.current.play().catch(() => {})
+        }
+      }, 100)
+      return () => clearTimeout(timer)
+    } else if (videoRef.current && !isHovered) {
+      videoRef.current.pause()
+      videoRef.current.currentTime = 0
     }
-
-    video.addEventListener('loadedmetadata', setFirstFrame)
-    return () => {
-      video.removeEventListener('loadedmetadata', setFirstFrame)
-    }
-  }, [])
+  }, [isHovered, shouldLoadVideo])
 
   // Optimized gradient opacity update - only on transition end instead of continuous RAF loop
   useEffect(() => {
@@ -108,29 +108,40 @@ export function VideoCard({ project, isHovered, onHoverChange }: VideoCardProps)
       onMouseLeave={() => onHoverChange(false)}
       data-video-card-id={project.id}
     >
-      {/* Video with poster - shows first frame as thumbnail */}
+      {/* Video with poster - shows thumbnail image until hovered */}
       <div className="absolute inset-0 will-change-transform">
-        <video
-          ref={videoRef}
-          poster={project.thumbnail || undefined}
-          className={cn(
-            "w-full h-full object-cover transition-all duration-700",
-            // Only apply blur when NOT hovered and NOT transitioning (reduces GPU load)
-            !isHovered && "grayscale brightness-75",
-          )}
-          loop
-          muted
-          playsInline
-          preload="metadata"
-          onLoadedData={() => {
-            setIsVideoLoaded(true)
-            if (videoRef.current && !isHovered) {
-              videoRef.current.currentTime = 0
-            }
-          }}
-        >
-          <source src={project.video} type="video/mp4" />
-        </video>
+        {shouldLoadVideo ? (
+          <video
+            ref={videoRef}
+            poster={project.thumbnail || undefined}
+            className={cn(
+              "w-full h-full object-cover transition-all duration-700",
+              // Only apply blur when NOT hovered and NOT transitioning (reduces GPU load)
+              !isHovered && "grayscale brightness-75",
+            )}
+            loop
+            muted
+            playsInline
+            preload="none"
+            onLoadedData={() => {
+              setIsVideoLoaded(true)
+              if (videoRef.current && !isHovered) {
+                videoRef.current.currentTime = 0
+              }
+            }}
+          >
+            <source src={project.video} type="video/mp4" />
+          </video>
+        ) : (
+          <img
+            src={project.thumbnail || "/placeholder-user.jpg"}
+            alt={project.projectName || "Project thumbnail"}
+            className={cn(
+              "w-full h-full object-cover transition-all duration-700",
+              !isHovered && "grayscale brightness-75",
+            )}
+          />
+        )}
       </div>
 
       {/* Preview overlay - animates from center to bottom on hover */}

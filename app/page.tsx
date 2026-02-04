@@ -77,19 +77,53 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
+    const determineActiveSection = () => {
+      const sections = sectionsRef.current.filter(Boolean) as HTMLElement[]
+      if (sections.length === 0) return
+
+      // Find the section that is most visible in the viewport
+      let maxVisibility = 0
+      let activeId = ""
+
+      sections.forEach((section) => {
+        const rect = section.getBoundingClientRect()
+        const viewportHeight = window.innerHeight
+        
+        // Calculate visibility: how much of the section is in the viewport
+        const visibleTop = Math.max(0, -rect.top)
+        const visibleBottom = Math.min(rect.height, viewportHeight - rect.top)
+        const visibleHeight = Math.max(0, visibleBottom - visibleTop)
+        const visibility = visibleHeight / Math.min(rect.height, viewportHeight)
+
+        // Prefer sections that are near the top of the viewport
+        const topProximity = rect.top >= 0 && rect.top < viewportHeight * 0.5 ? 1.2 : 1
+        const adjustedVisibility = visibility * topProximity
+
+        if (adjustedVisibility > maxVisibility) {
+          maxVisibility = adjustedVisibility
+          activeId = section.id
+        }
+      })
+
+      // Map "test" section to "work" for navigation consistency
+      const sectionId = activeId === "test" ? "work" : activeId
+      if (sectionId) {
+        setActiveSection(sectionId)
+      }
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.remove("opacity-0")
             entry.target.classList.add("animate-fade-in-up")
-            // Map "test" section to "work" for navigation consistency
-            const sectionId = entry.target.id === "test" ? "work" : entry.target.id
-            setActiveSection(sectionId)
           }
         })
+        // Determine active section whenever intersection changes
+        determineActiveSection()
       },
-      { threshold: 0.1, rootMargin: "0px 0px -10% 0px" },
+      { threshold: [0, 0.1, 0.5, 1], rootMargin: "0px 0px -10% 0px" },
     )
 
     // Use setTimeout to ensure refs are set after render
@@ -106,11 +140,21 @@ export default function Home() {
           }
         }
       })
+      // Initial determination
+      determineActiveSection()
     }, 0)
+
+    // Also check on scroll for more reliable updates
+    const handleScroll = () => {
+      determineActiveSection()
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true })
 
     return () => {
       clearTimeout(timeoutId)
       observer.disconnect()
+      window.removeEventListener("scroll", handleScroll)
     }
   }, [])
 
@@ -223,8 +267,8 @@ export default function Home() {
                     projectName: "AXIS RESEARCHER",
                     company: "Personal Project",
                     description: "End to End eBay AI automation pipeline that researches, generates titles, descriptions and photos, and autonomously lists products.",
-                    thumbnail: "/placeholder-user.jpg",
-                    video: "/videos/AxisEdited.mp4",
+                    thumbnail: "/thumbnails/AxisEdited.jpg",
+                    video: "/videos-compressed/AxisEdited.mp4",
                     githubUrl: "https://github.com/bobbybotbop/AxisResearcher",
                     tech: ["Python", "eBay API", "AI", "Automation", "Image Generation"],
                   },
@@ -234,8 +278,8 @@ export default function Home() {
                     projectName: "AnyCard",
                     company: "Cornell DTI Trends Final Project",
                     description: "Full-stack platform w/ AI-generated trading cards via Claude API, Three.js 3D pack animations, image search integration & trading.",
-                    thumbnail: "/placeholder-user.jpg",
-                    video: "/videos/AnyCardEdited.mp4",
+                    thumbnail: "/thumbnails/AnyCardEdited.jpg",
+                    video: "/videos-compressed/AnyCardEdited.mp4",
                     githubUrl: "https://github.com/bobbybotbop/AnyCard",
                     tech: ["React", "Three.js", "Claude API", "Node.js", "Full-stack"],
                   },
@@ -245,8 +289,8 @@ export default function Home() {
                     projectName: "Memory Box",
                     company: "Hawl Technologies Intern",
                     description: "Full-stack Chrome extension aggregating multi-platform LLM conversations with semantic search, hallucination detection & cloud sync.",
-                    thumbnail: "/placeholder-user.jpg",
-                    video: "/videos/memoryboxEdited.mp4",
+                    thumbnail: "/thumbnails/memoryboxEdited.jpg",
+                    video: "/videos-compressed/memoryboxEdited.mp4",
                     githubUrl: "",
                     tech: ["Chrome Extension", "TypeScript", "LLM", "Semantic Search", "Cloud Sync"],
                   },
@@ -256,8 +300,8 @@ export default function Home() {
                     projectName: "BOND BUDDY",
                     company: "Personal Project",
                     description: "Desktop pet app built with Electron & React featuring draggable UI, tray integration, and custom image/GIF support.",
-                    thumbnail: "/placeholder-user.jpg",
-                    video: "/videos/bondBuddyEdited.mp4",
+                    thumbnail: "/thumbnails/bondBuddyEdited.jpg",
+                    video: "/videos-compressed/bondBuddyEdited.mp4",
                     githubUrl: "https://github.com/bobbybotbop/BondBuddy",
                     tech: ["Electron", "React", "TypeScript", "Desktop App"],
                   },
@@ -267,8 +311,8 @@ export default function Home() {
                     projectName: "DataVision",
                     company: "Bitcamp Hackathon Project",
                     description: "Agentic data platform using LangGraph + Gemini API for automated statistical analysis, hypothesis testing & real-time visualization.",
-                    thumbnail: "/placeholder-user.jpg",
-                    video: "/videos/dataVisionEdited.mp4",
+                    thumbnail: "/thumbnails/dataVisionEdited.jpg",
+                    video: "/videos-compressed/dataVisionEdited.mp4",
                     githubUrl: "https://github.com/aadia1234/DataVision",
                     tech: ["Python", "LangGraph", "Gemini API", "Data Visualization", "Statistics"],
                   },
@@ -278,8 +322,8 @@ export default function Home() {
                     projectName: "CORNELL HOBBYSWAP",
                     company: "Personal Project",
                     description: "Full-stack social platform with recommendation algorithms, user profiles, and real-time messaging for skill exchange.",
-                    thumbnail: "/placeholder-user.jpg",
-                    video: "/videos/hobbyswapEdited.mp4",
+                    thumbnail: "/thumbnails/hobbyswapEdited.jpg",
+                    video: "/videos-compressed/hobbyswapEdited.mp4",
                     githubUrl: "https://github.com/bobbybotbop/HobbySwap",
                     tech: ["React", "Node.js", "WebSocket", "Database", "Recommendation Algorithms"],
                   },
@@ -289,8 +333,8 @@ export default function Home() {
                     projectName: "PRETTIER DESKTOP TASK MANAGER",
                     company: "Personal Project",
                     description: "System monitoring desktop app with real-time metrics visualization and animated UI inspired by Windows Task Manager.",
-                    thumbnail: "/placeholder-user.jpg",
-                    video: "/videos/taskmanageredited.mp4",
+                    thumbnail: "/thumbnails/taskmanageredited.jpg",
+                    video: "/videos-compressed/taskmanageredited.mp4",
                     githubUrl: "https://github.com/bobbybotbop/SystemVisualizer",
                     tech: ["Electron", "React", "System Monitoring", "Data Visualization"],
                   },
@@ -300,8 +344,8 @@ export default function Home() {
                     projectName: "MOVIE VIEWER",
                     company: "Personal Project",
                     description: "React application with TMDb API integration featuring real-time data fetching and full-text search functionality.",
-                    thumbnail: "/placeholder-user.jpg",
-                    video: "/videos/movieEdited.mp4",
+                    thumbnail: "/thumbnails/movieEdited.jpg",
+                    video: "/videos-compressed/movieEdited.mp4",
                     githubUrl: "https://github.com/bobbybotbop/movieProjectJS",
                     tech: ["React", "TMDb API", "JavaScript", "API Integration"],
                   },

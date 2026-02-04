@@ -6,7 +6,10 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start"
+    "start": "next start",
+    "extract-thumbnails": "node scripts/extract-thumbnails.js",
+    "check-video-sizes": "node scripts/check-video-sizes.js",
+    "compress-videos": "node scripts/compress-videos.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
