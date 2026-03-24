@@ -1,181 +1,281 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { useEffect, useRef, useState } from "react"
-import { VideoCard } from "@/components/video-card"
-import { CustomCursor } from "@/components/custom-cursor"
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
+import { VideoCard } from "@/components/video-card";
+import { CustomCursor } from "@/components/custom-cursor";
 
 export default function Home() {
-  const [isDark, setIsDark] = useState(true)
-  const [activeSection, setActiveSection] = useState("")
-  const sectionsRef = useRef<(HTMLElement | null)[]>([])
-  const [hoveredId, setHoveredId] = useState<number | null>(null)
-  const mousePositionRef = useRef({ x: 0, y: 0 })
+  const [isDark, setIsDark] = useState(true);
+  const [activeSection, setActiveSection] = useState("");
+  const sectionsRef = useRef<(HTMLElement | null)[]>([]);
+  const [hoveredId, setHoveredId] = useState<number | null>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [isOverVideoControls, setIsOverVideoControls] = useState(false);
+  const [linkedVideoId, setLinkedVideoId] = useState<number | null>(null);
+  const mousePositionRef = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", isDark)
-  }, [isDark])
+    document.documentElement.classList.toggle("dark", isDark);
+  }, [isDark]);
+
+  useEffect(() => {
+    if (expandedId !== null) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [expandedId]);
 
   // Track mouse position and check hover on move/scroll (throttled for performance)
   useEffect(() => {
-    let rafId: number | null = null
-    let pendingCheck = false
+    let rafId: number | null = null;
+    let pendingCheck = false;
 
     const checkHoveredCard = () => {
       const element = document.elementFromPoint(
         mousePositionRef.current.x,
-        mousePositionRef.current.y
-      )
-      
+        mousePositionRef.current.y,
+      );
+
+      const isOverControls = !!element?.closest("[data-video-controls]");
+      setIsOverVideoControls(isOverControls);
+
+      if (linkedVideoId !== null) {
+        pendingCheck = false;
+        return;
+      }
+
       if (element) {
         // Find the video card element (might be nested)
-        const videoCard = element.closest('[data-video-card-id]') as HTMLElement
+        const videoCard = element.closest(
+          "[data-video-card-id]",
+        ) as HTMLElement;
         if (videoCard) {
-          const cardId = parseInt(videoCard.getAttribute('data-video-card-id') || '0')
+          const cardId = parseInt(
+            videoCard.getAttribute("data-video-card-id") || "0",
+          );
           if (cardId > 0) {
-            setHoveredId(cardId)
-            pendingCheck = false
-            return
+            setHoveredId(cardId);
+            pendingCheck = false;
+            return;
           }
         }
       }
-      
+
       // If no card is under cursor, clear hover state
-      setHoveredId(null)
-      pendingCheck = false
-    }
+      setHoveredId(null);
+      pendingCheck = false;
+    };
 
     const throttledCheck = () => {
       if (!pendingCheck) {
-        pendingCheck = true
+        pendingCheck = true;
         rafId = requestAnimationFrame(() => {
-          checkHoveredCard()
-          rafId = null
-        })
+          checkHoveredCard();
+          rafId = null;
+        });
       }
-    }
+    };
 
     const handleMouseMove = (e: MouseEvent) => {
-      mousePositionRef.current = { x: e.clientX, y: e.clientY }
-      throttledCheck()
-    }
+      mousePositionRef.current = { x: e.clientX, y: e.clientY };
+      throttledCheck();
+    };
 
     const handleScroll = () => {
-      throttledCheck()
-    }
+      throttledCheck();
+    };
 
-    window.addEventListener("mousemove", handleMouseMove, { passive: true })
-    window.addEventListener("scroll", handleScroll, { passive: true })
-    
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove)
-      window.removeEventListener("scroll", handleScroll)
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("scroll", handleScroll);
       if (rafId !== null) {
-        cancelAnimationFrame(rafId)
+        cancelAnimationFrame(rafId);
       }
-    }
-  }, [])
+    };
+  }, [linkedVideoId]);
 
   useEffect(() => {
     const determineActiveSection = () => {
-      const sections = sectionsRef.current.filter(Boolean) as HTMLElement[]
-      if (sections.length === 0) return
+      const sections = sectionsRef.current.filter(Boolean) as HTMLElement[];
+      if (sections.length === 0) return;
 
       // Find the section that is most visible in the viewport
-      let maxVisibility = 0
-      let activeId = ""
+      let maxVisibility = 0;
+      let activeId = "";
 
       sections.forEach((section) => {
-        const rect = section.getBoundingClientRect()
-        const viewportHeight = window.innerHeight
-        
+        const rect = section.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+
         // Calculate visibility: how much of the section is in the viewport
-        const visibleTop = Math.max(0, -rect.top)
-        const visibleBottom = Math.min(rect.height, viewportHeight - rect.top)
-        const visibleHeight = Math.max(0, visibleBottom - visibleTop)
-        const visibility = visibleHeight / Math.min(rect.height, viewportHeight)
+        const visibleTop = Math.max(0, -rect.top);
+        const visibleBottom = Math.min(rect.height, viewportHeight - rect.top);
+        const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+        const visibility =
+          visibleHeight / Math.min(rect.height, viewportHeight);
 
         // Prefer sections that are near the top of the viewport
-        const topProximity = rect.top >= 0 && rect.top < viewportHeight * 0.5 ? 1.2 : 1
-        const adjustedVisibility = visibility * topProximity
+        const topProximity =
+          rect.top >= 0 && rect.top < viewportHeight * 0.5 ? 1.2 : 1;
+        const adjustedVisibility = visibility * topProximity;
 
         if (adjustedVisibility > maxVisibility) {
-          maxVisibility = adjustedVisibility
-          activeId = section.id
+          maxVisibility = adjustedVisibility;
+          activeId = section.id;
         }
-      })
+      });
 
       // Map "test" section to "work" for navigation consistency
-      const sectionId = activeId === "test" ? "work" : activeId
+      const sectionId = activeId === "test" ? "work" : activeId;
       if (sectionId) {
-        setActiveSection(sectionId)
+        setActiveSection(sectionId);
       }
-    }
+    };
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            entry.target.classList.remove("opacity-0")
-            entry.target.classList.add("animate-fade-in-up")
+            entry.target.classList.remove("opacity-0");
+            entry.target.classList.add("animate-fade-in-up");
           }
-        })
+        });
         // Determine active section whenever intersection changes
-        determineActiveSection()
+        determineActiveSection();
       },
       { threshold: [0, 0.1, 0.5, 1], rootMargin: "0px 0px -10% 0px" },
-    )
+    );
 
     // Use setTimeout to ensure refs are set after render
     const timeoutId = setTimeout(() => {
       sectionsRef.current.forEach((section) => {
         if (section) {
-          observer.observe(section)
+          observer.observe(section);
           // Check if section is already in viewport
-          const rect = section.getBoundingClientRect()
-          const isInViewport = rect.top < window.innerHeight && rect.bottom > 0
+          const rect = section.getBoundingClientRect();
+          const isInViewport = rect.top < window.innerHeight && rect.bottom > 0;
           if (isInViewport) {
-            section.classList.remove("opacity-0")
-            section.classList.add("animate-fade-in-up")
+            section.classList.remove("opacity-0");
+            section.classList.add("animate-fade-in-up");
           }
         }
-      })
+      });
       // Initial determination
-      determineActiveSection()
-    }, 0)
+      determineActiveSection();
+    }, 0);
 
     // Also check on scroll for more reliable updates
     const handleScroll = () => {
-      determineActiveSection()
-    }
+      determineActiveSection();
+    };
 
-    window.addEventListener("scroll", handleScroll, { passive: true })
+    window.addEventListener("scroll", handleScroll, { passive: true });
 
     return () => {
-      clearTimeout(timeoutId)
-      observer.disconnect()
-      window.removeEventListener("scroll", handleScroll)
-    }
-  }, [])
+      clearTimeout(timeoutId);
+      observer.disconnect();
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  useEffect(() => {
+    const VIDEO_DEEP_LINK_OFFSET_VH = 0.25;
+    const VIDEO_CARD_TRANSITION_MS = 850;
+    let correctionTimerId: number | null = null;
+
+    const scrollVideoIntoPosition = (
+      target: HTMLElement,
+      behavior: ScrollBehavior,
+    ) => {
+      const rect = target.getBoundingClientRect();
+      const offsetPx = window.innerHeight * VIDEO_DEEP_LINK_OFFSET_VH;
+      const targetY = Math.max(0, window.scrollY + rect.top - offsetPx);
+
+      window.scrollTo({ top: targetY, behavior });
+    };
+
+    const scrollToVideoFromHash = () => {
+      const hash = window.location.hash;
+      const match = hash.match(/^#video-(\d+)$/);
+      if (!match) {
+        setLinkedVideoId(null);
+        if (correctionTimerId !== null) {
+          window.clearTimeout(correctionTimerId);
+          correctionTimerId = null;
+        }
+        return;
+      }
+
+      const videoId = parseInt(match[1], 10);
+      if (!Number.isFinite(videoId)) return;
+
+      const target = document.querySelector(
+        `[data-video-card-id="${videoId}"]`,
+      ) as HTMLElement | null;
+      if (!target) return;
+
+      setLinkedVideoId(videoId);
+      setHoveredId(videoId);
+      // Place immediately, then do one smooth correction after transition.
+      scrollVideoIntoPosition(target, "auto");
+
+      // Correct final position after card expand/collapse transition settles.
+      if (correctionTimerId !== null) {
+        window.clearTimeout(correctionTimerId);
+      }
+      correctionTimerId = window.setTimeout(() => {
+        const refreshedTarget = document.querySelector(
+          `[data-video-card-id="${videoId}"]`,
+        ) as HTMLElement | null;
+        if (!refreshedTarget) return;
+        scrollVideoIntoPosition(refreshedTarget, "smooth");
+        correctionTimerId = null;
+      }, VIDEO_CARD_TRANSITION_MS);
+    };
+
+    const timerId = window.setTimeout(scrollToVideoFromHash, 150);
+    window.addEventListener("hashchange", scrollToVideoFromHash);
+
+    return () => {
+      window.clearTimeout(timerId);
+      if (correctionTimerId !== null) {
+        window.clearTimeout(correctionTimerId);
+      }
+      window.removeEventListener("hashchange", scrollToVideoFromHash);
+    };
+  }, []);
 
   const toggleTheme = () => {
-    setIsDark(!isDark)
-  }
+    setIsDark(!isDark);
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground relative">
-      <CustomCursor isActive={hoveredId !== null} />
+      <CustomCursor isActive={hoveredId !== null && !isOverVideoControls} />
       <nav className="fixed left-8 top-1/2 -translate-y-1/2 z-10 hidden lg:block">
         <div className="flex flex-col gap-4">
           {["intro", "work", "connect"].map((section) => (
             <button
               key={section}
               onClick={() => {
-                const targetId = section === "work" ? "test" : section
-                document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth" })
+                const targetId = section === "work" ? "test" : section;
+                document
+                  .getElementById(targetId)
+                  ?.scrollIntoView({ behavior: "smooth" });
               }}
               className={`w-2 h-8 rounded-full transition-all duration-500 ${
-                activeSection === section || (section === "work" && activeSection === "test") ? "bg-foreground" : "bg-muted-foreground/30 hover:bg-muted-foreground/60"
+                activeSection === section ||
+                (section === "work" && activeSection === "test")
+                  ? "bg-foreground"
+                  : "bg-muted-foreground/30 hover:bg-muted-foreground/60"
               }`}
               aria-label={`Navigate to ${section}`}
             />
@@ -187,14 +287,16 @@ export default function Home() {
         <header
           id="intro"
           ref={(el) => {
-            sectionsRef.current[0] = el
+            sectionsRef.current[0] = el;
           }}
           className="min-h-screen flex items-center opacity-0"
         >
           <div className="grid lg:grid-cols-5 gap-12 sm:gap-16 w-full">
             <div className="lg:col-span-3 space-y-6 sm:space-y-8">
               <div className="space-y-3 sm:space-y-2">
-                <div className="text-sm text-muted-foreground font-mono tracking-wider">PORTFOLIO / 2026</div>
+                <div className="text-sm text-muted-foreground font-mono tracking-wider">
+                  PORTFOLIO / 2026
+                </div>
                 <h1 className="text-5xl sm:text-6xl lg:text-7xl font-light tracking-tight">
                   William
                   <br />
@@ -204,8 +306,13 @@ export default function Home() {
 
               <div className="space-y-6 max-w-md">
                 <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed">
-                Passionate  <span className="text-foreground"> full-stack</span> web developer with a creative edge, bringing ideas with  <span className="text-foreground"> software engineering.</span>
-
+                  Passionate{" "}
+                  <span className="text-foreground"> full-stack</span> web
+                  developer with a creative edge, bringing ideas with{" "}
+                  <span className="text-foreground">
+                    {" "}
+                    software engineering.
+                  </span>
                 </p>
 
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 text-sm text-muted-foreground">
@@ -220,18 +327,32 @@ export default function Home() {
 
             <div className="lg:col-span-2 flex flex-col justify-end space-y-6 sm:space-y-8 mt-8 lg:mt-0">
               <div className="space-y-4">
-                <div className="text-sm text-muted-foreground font-mono">CURRENTLY</div>
+                <div className="text-sm text-muted-foreground font-mono">
+                  CURRENTLY
+                </div>
                 <div className="space-y-2">
                   <div className="text-foreground">Student</div>
-                  <div className="text-muted-foreground">@ Cornell University</div>
-                  <div className="text-xs text-muted-foreground">Graduating 2027</div>
+                  <div className="text-muted-foreground">
+                    @ Cornell University
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Graduating 2027
+                  </div>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <div className="text-sm text-muted-foreground font-mono">FOCUS</div>
+                <div className="text-sm text-muted-foreground font-mono">
+                  FOCUS
+                </div>
                 <div className="flex flex-wrap gap-2">
-                  {["Typescript", "React", "Python", "API Integration", "Database Integration"].map((skill) => (
+                  {[
+                    "Typescript",
+                    "React",
+                    "Python",
+                    "API Integration",
+                    "Database Integration",
+                  ].map((skill) => (
                     <span
                       key={skill}
                       className="px-3 py-1 text-xs border border-border rounded-full hover:border-muted-foreground/50 transition-colors duration-300"
@@ -248,14 +369,18 @@ export default function Home() {
         <section
           id="test"
           ref={(el) => {
-            sectionsRef.current[1] = el
+            sectionsRef.current[1] = el;
           }}
           className="min-h-screen py-20 sm:py-32 opacity-0"
         >
           <div className="space-y-12 sm:space-y-16">
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-              <h2 className="text-3xl sm:text-4xl font-light">Previous Experience</h2>
-              <div className="text-sm text-muted-foreground font-mono">2025 — 2026</div>
+              <h2 className="text-3xl sm:text-4xl font-light">
+                Previous Experience
+              </h2>
+              <div className="text-sm text-muted-foreground font-mono">
+                2025 — 2026
+              </div>
             </div>
 
             <div className="w-full">
@@ -266,40 +391,70 @@ export default function Home() {
                     year: "2026",
                     projectName: "AXIS RESEARCHER",
                     company: "Personal Project",
-                    description: "End to End eBay AI automation pipeline that researches, generates titles, descriptions and photos, and autonomously lists products.",
+                    shortDescription:
+                      "End to End eBay AI automation pipeline that researches, generates titles, descriptions and photos, and autonomously lists products.",
+                    fullDescription:
+                      "Axis Researcher is a fully automated eBay listing pipeline powered by AI. It takes a product as input, researches comparable listings, generates optimized titles and descriptions using large language models, creates professional product photos with AI image generation, and autonomously publishes the listing to eBay. The system handles the entire workflow end-to-end, from market research to live listing, significantly reducing the time and effort required to sell products online.",
                     thumbnail: "/thumbnails/AxisEdited.jpg",
                     video: "/videos-compressed/AxisEdited.mp4",
                     githubUrl: "https://github.com/bobbybotbop/AxisResearcher",
-                    tech: ["Python", "eBay API", "AI", "Automation", "Image Generation"],
+                    tech: [
+                      "Python",
+                      "eBay API",
+                      "AI",
+                      "Automation",
+                      "Image Generation",
+                    ],
                   },
                   {
                     id: 2,
                     year: "2025",
                     projectName: "AnyCard",
                     company: "Cornell DTI Trends Final Project",
-                    description: "Full-stack platform w/ AI-generated trading cards via Claude API, Three.js 3D pack animations, image search integration & trading.",
+                    shortDescription:
+                      "Full-stack platform w/ AI-generated trading cards via Claude API, Three.js 3D pack animations, image search integration & trading.",
+                    fullDescription:
+                      "AnyCard is a full-stack web application that lets users create and trade AI-generated trading cards. Using the Claude API, the platform generates unique card designs based on user prompts. Cards are rendered with Three.js 3D pack-opening animations for an immersive unboxing experience. The app integrates image search APIs for card artwork, supports a trading marketplace between users, and features a collection management system with rarity tiers and statistics.",
                     thumbnail: "/thumbnails/AnyCardEdited.jpg",
                     video: "/videos-compressed/AnyCardEdited.mp4",
                     githubUrl: "https://github.com/bobbybotbop/AnyCard",
-                    tech: ["React", "Three.js", "Claude API", "Node.js", "Full-stack"],
+                    tech: [
+                      "React",
+                      "Three.js",
+                      "Claude API",
+                      "Node.js",
+                      "Full-stack",
+                    ],
                   },
                   {
                     id: 3,
                     year: "2025",
                     projectName: "Memory Box",
                     company: "Hawl Technologies Intern",
-                    description: "Full-stack Chrome extension aggregating multi-platform LLM conversations with semantic search, hallucination detection & cloud sync.",
+                    shortDescription:
+                      "Full-stack Chrome extension aggregating multi-platform LLM conversations with semantic search, hallucination detection & cloud sync.",
+                    fullDescription:
+                      "Memory Box is a Chrome extension built during an internship at Hawl Technologies. It aggregates conversations from multiple LLM platforms (ChatGPT, Claude, Gemini, etc.) into a unified interface. Key features include semantic search across all saved conversations, an AI-powered hallucination detection system that flags potentially inaccurate responses, and cloud synchronization so users can access their conversation history across devices. The extension runs entirely in the browser with a lightweight backend for sync.",
                     thumbnail: "/thumbnails/memoryboxEdited.jpg",
                     video: "/videos-compressed/memoryboxEdited.mp4",
                     githubUrl: "",
-                    tech: ["Chrome Extension", "TypeScript", "LLM", "Semantic Search", "Cloud Sync"],
+                    tech: [
+                      "Chrome Extension",
+                      "TypeScript",
+                      "LLM",
+                      "Semantic Search",
+                      "Cloud Sync",
+                    ],
                   },
                   {
                     id: 4,
                     year: "2025",
                     projectName: "BOND BUDDY",
                     company: "Personal Project",
-                    description: "Desktop pet app built with Electron & React featuring draggable UI, tray integration, and custom image/GIF support.",
+                    shortDescription:
+                      "Desktop pet app built with Electron & React featuring draggable UI, tray integration, and custom image/GIF support.",
+                    fullDescription:
+                      "Bond Buddy is a desktop companion application built with Electron and React. It places a customizable pet character on the user's desktop that can be dragged around freely. The app features system tray integration for quick access, supports custom images and animated GIFs for the pet character, and includes idle animations and interactive behaviors. Users can personalize their desktop experience with different characters and animation sets.",
                     thumbnail: "/thumbnails/bondBuddyEdited.jpg",
                     video: "/videos-compressed/bondBuddyEdited.mp4",
                     githubUrl: "https://github.com/bobbybotbop/BondBuddy",
@@ -310,51 +465,99 @@ export default function Home() {
                     year: "2025",
                     projectName: "DataVision",
                     company: "Bitcamp Hackathon Project",
-                    description: "Agentic data platform using LangGraph + Gemini API for automated statistical analysis, hypothesis testing & real-time visualization.",
+                    shortDescription:
+                      "Agentic data platform using LangGraph + Gemini API for automated statistical analysis, hypothesis testing & real-time visualization.",
+                    fullDescription:
+                      "DataVision is an agentic data analysis platform built at the Bitcamp Hackathon. It uses LangGraph to orchestrate multiple AI agents powered by the Gemini API that collaboratively analyze uploaded datasets. The system automatically performs statistical analysis, generates and tests hypotheses, and produces real-time interactive visualizations. Users can ask natural language questions about their data and receive comprehensive analytical reports with supporting charts and statistical evidence.",
                     thumbnail: "/thumbnails/dataVisionEdited.jpg",
                     video: "/videos-compressed/dataVisionEdited.mp4",
                     githubUrl: "https://github.com/aadia1234/DataVision",
-                    tech: ["Python", "LangGraph", "Gemini API", "Data Visualization", "Statistics"],
+                    tech: [
+                      "Python",
+                      "LangGraph",
+                      "Gemini API",
+                      "Data Visualization",
+                      "Statistics",
+                    ],
                   },
                   {
                     id: 6,
                     year: "2025",
                     projectName: "CORNELL HOBBYSWAP",
                     company: "Personal Project",
-                    description: "Full-stack social platform with recommendation algorithms, user profiles, and real-time messaging for skill exchange.",
+                    shortDescription:
+                      "Full-stack social platform with recommendation algorithms, user profiles, and real-time messaging for skill exchange.",
+                    fullDescription:
+                      "Cornell HobbySwap is a full-stack social platform designed for the Cornell community to exchange skills and hobbies. Users create profiles listing skills they can teach and skills they want to learn. A recommendation algorithm matches users based on complementary interests. The platform features real-time messaging via WebSockets for coordinating meetups, a rating and review system, and a discovery feed for browsing available skill exchanges across campus.",
                     thumbnail: "/thumbnails/hobbyswapEdited.jpg",
                     video: "/videos-compressed/hobbyswapEdited.mp4",
                     githubUrl: "https://github.com/bobbybotbop/HobbySwap",
-                    tech: ["React", "Node.js", "WebSocket", "Database", "Recommendation Algorithms"],
+                    tech: [
+                      "React",
+                      "Node.js",
+                      "WebSocket",
+                      "Database",
+                      "Recommendation Algorithms",
+                    ],
                   },
                   {
                     id: 7,
                     year: "2025",
                     projectName: "PRETTIER DESKTOP TASK MANAGER",
                     company: "Personal Project",
-                    description: "System monitoring desktop app with real-time metrics visualization and animated UI inspired by Windows Task Manager.",
+                    shortDescription:
+                      "System monitoring desktop app with real-time metrics visualization and animated UI inspired by Windows Task Manager.",
+                    fullDescription:
+                      "Prettier Desktop Task Manager is a system monitoring application that reimagines the Windows Task Manager with a modern, visually appealing interface. Built with Electron and React, it displays real-time CPU, memory, disk, and network metrics through animated charts and graphs. The UI features smooth transitions, color-coded resource usage indicators, and a clean layout that makes system monitoring both informative and aesthetically pleasing.",
                     thumbnail: "/thumbnails/taskmanageredited.jpg",
                     video: "/videos-compressed/taskmanageredited.mp4",
-                    githubUrl: "https://github.com/bobbybotbop/SystemVisualizer",
-                    tech: ["Electron", "React", "System Monitoring", "Data Visualization"],
+                    githubUrl:
+                      "https://github.com/bobbybotbop/SystemVisualizer",
+                    tech: [
+                      "Electron",
+                      "React",
+                      "System Monitoring",
+                      "Data Visualization",
+                    ],
                   },
                   {
                     id: 8,
                     year: "2025",
                     projectName: "MOVIE VIEWER",
                     company: "Personal Project",
-                    description: "React application with TMDb API integration featuring real-time data fetching and full-text search functionality.",
+                    shortDescription:
+                      "React application with TMDb API integration featuring real-time data fetching and full-text search functionality.",
+                    fullDescription:
+                      "Movie Viewer is a React application that integrates with The Movie Database (TMDb) API to provide a rich movie browsing experience. Users can search for movies with real-time results, browse trending and popular titles, and view detailed information including cast, ratings, trailers, and similar movie recommendations. The app features a responsive design, infinite scroll pagination, and client-side caching for fast repeat lookups.",
                     thumbnail: "/thumbnails/movieEdited.jpg",
                     video: "/videos-compressed/movieEdited.mp4",
                     githubUrl: "https://github.com/bobbybotbop/movieProjectJS",
-                    tech: ["React", "TMDb API", "JavaScript", "API Integration"],
+                    tech: [
+                      "React",
+                      "TMDb API",
+                      "JavaScript",
+                      "API Integration",
+                    ],
                   },
                 ].map((project) => (
                   <VideoCard
                     key={project.id}
                     project={project}
-                    isHovered={hoveredId === project.id}
-                    onHoverChange={(hovered) => setHoveredId(hovered ? project.id : null)}
+                    isHovered={
+                      hoveredId === project.id || linkedVideoId === project.id
+                    }
+                    isExpanded={expandedId === project.id}
+                    onHoverChange={(hovered) => {
+                      if (linkedVideoId !== null) {
+                        setLinkedVideoId(null);
+                      }
+                      setHoveredId(hovered ? project.id : null);
+                    }}
+                    onExpandToggle={() => {
+                      setExpandedId(
+                        expandedId === project.id ? null : project.id,
+                      );
+                    }}
                   />
                 ))}
               </div>
@@ -362,16 +565,21 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="connect" ref={(el) => {
-          sectionsRef.current[2] = el
-        }} className="py-10 sm:py-10 opacity-0">
+        <section
+          id="connect"
+          ref={(el) => {
+            sectionsRef.current[2] = el;
+          }}
+          className="py-10 sm:py-10 opacity-0"
+        >
           <div className="grid lg:grid-cols-2 gap-12 sm:gap-16">
             <div className="space-y-6 sm:space-y-8">
               <h2 className="text-3xl sm:text-4xl font-light">Let's Connect</h2>
 
               <div className="space-y-6">
                 <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed">
-                  Always interested in new opportunities, collaborations, and conversations about technology and design.
+                  Always interested in new opportunities, collaborations, and
+                  conversations about technology and design.
                 </p>
 
                 <div className="space-y-4">
@@ -379,14 +587,21 @@ export default function Home() {
                     href="mailto:williambillychen@gmail.com"
                     className="group flex items-center gap-3 text-foreground hover:text-muted-foreground transition-colors duration-300"
                   >
-                    <span className="text-base sm:text-lg">williambillychen@gmail.com</span>
+                    <span className="text-base sm:text-lg">
+                      williambillychen@gmail.com
+                    </span>
                     <svg
                       className="w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-300"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17 8l4 4m0 0l-4 4m4-4H3"
+                      />
                     </svg>
                   </Link>
                 </div>
@@ -394,12 +609,22 @@ export default function Home() {
             </div>
 
             <div className="space-y-6 sm:space-y-8">
-              <div className="text-sm text-muted-foreground font-mono">ELSEWHERE</div>
+              <div className="text-sm text-muted-foreground font-mono">
+                ELSEWHERE
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
-                  { name: "GitHub", handle: "@bobbybotbop", url: "https://github.com/bobbybotbop" },
-                  { name: "LinkedIn", handle: "williamchenchen", url: "https://www.linkedin.com/in/williamchenchen/" },
+                  {
+                    name: "GitHub",
+                    handle: "@bobbybotbop",
+                    url: "https://github.com/bobbybotbop",
+                  },
+                  {
+                    name: "LinkedIn",
+                    handle: "williamchenchen",
+                    url: "https://www.linkedin.com/in/williamchenchen/",
+                  },
                 ].map((social) => (
                   <Link
                     key={social.name}
@@ -410,7 +635,9 @@ export default function Home() {
                       <div className="text-foreground group-hover:text-muted-foreground transition-colors duration-300">
                         {social.name}
                       </div>
-                      <div className="text-sm text-muted-foreground">{social.handle}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {social.handle}
+                      </div>
                     </div>
                   </Link>
                 ))}
@@ -460,5 +687,5 @@ export default function Home() {
 
       <div className="fixed bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none"></div>
     </div>
-  )
+  );
 }
