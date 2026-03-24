@@ -170,7 +170,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const VIDEO_DEEP_LINK_OFFSET_VH = 0.25;
+    const VIDEO_DEEP_LINK_OFFSET_VH = 0.17;
     const VIDEO_CARD_TRANSITION_MS = 850;
     let correctionTimerId: number | null = null;
 
