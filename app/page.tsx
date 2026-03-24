@@ -3,32 +3,18 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { VideoCard } from "@/components/video-card";
-import { CustomCursor } from "@/components/custom-cursor";
 
 export default function Home() {
   const [isDark, setIsDark] = useState(true);
   const [activeSection, setActiveSection] = useState("");
   const sectionsRef = useRef<(HTMLElement | null)[]>([]);
   const [hoveredId, setHoveredId] = useState<number | null>(null);
-  const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [isOverVideoControls, setIsOverVideoControls] = useState(false);
   const [linkedVideoId, setLinkedVideoId] = useState<number | null>(null);
   const mousePositionRef = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", isDark);
   }, [isDark]);
-
-  useEffect(() => {
-    if (expandedId !== null) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [expandedId]);
 
   // Track mouse position and check hover on move/scroll (throttled for performance)
   useEffect(() => {
@@ -40,9 +26,6 @@ export default function Home() {
         mousePositionRef.current.x,
         mousePositionRef.current.y,
       );
-
-      const isOverControls = !!element?.closest("[data-video-controls]");
-      setIsOverVideoControls(isOverControls);
 
       if (linkedVideoId !== null) {
         pendingCheck = false;
@@ -259,7 +242,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background text-foreground relative">
-      <CustomCursor isActive={hoveredId !== null && !isOverVideoControls} />
       <nav className="fixed left-8 top-1/2 -translate-y-1/2 z-10 hidden lg:block">
         <div className="flex flex-col gap-4">
           {["intro", "work", "connect"].map((section) => (
@@ -546,17 +528,11 @@ export default function Home() {
                     isHovered={
                       hoveredId === project.id || linkedVideoId === project.id
                     }
-                    isExpanded={expandedId === project.id}
                     onHoverChange={(hovered) => {
                       if (linkedVideoId !== null) {
                         setLinkedVideoId(null);
                       }
                       setHoveredId(hovered ? project.id : null);
-                    }}
-                    onExpandToggle={() => {
-                      setExpandedId(
-                        expandedId === project.id ? null : project.id,
-                      );
                     }}
                   />
                 ))}

@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
-import { Github, Play, Pause, RotateCcw, RotateCw, X } from "lucide-react";
+import { Github, Play, Pause, RotateCcw, RotateCw } from "lucide-react";
 import { ProjectActionButton } from "@/components/project-action-button";
 
 function formatTime(seconds: number): string {
@@ -30,9 +29,7 @@ interface Project {
 interface VideoCardProps {
   project: Project;
   isHovered: boolean;
-  isExpanded: boolean;
   onHoverChange: (hovered: boolean) => void;
-  onExpandToggle: () => void;
 }
 
 const EASE = "cubic-bezier(0.4,0,0.2,1)";
@@ -41,9 +38,7 @@ const DURATION = 800;
 export function VideoCard({
   project,
   isHovered,
-  isExpanded,
   onHoverChange,
-  onExpandToggle,
 }: VideoCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -54,9 +49,6 @@ export function VideoCard({
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
 
-  const [originRect, setOriginRect] = useState<DOMRect | null>(null);
-  const [animatingIn, setAnimatingIn] = useState(false);
-  const [showExpanded, setShowExpanded] = useState(false);
 
   const togglePlayPause = useCallback(() => {
     const video = videoRef.current;
@@ -85,13 +77,13 @@ export function VideoCard({
   }, []);
 
   useEffect(() => {
-    if (isHovered || isExpanded) {
+    if (isHovered) {
       setShouldLoadVideo(true);
     }
-  }, [isHovered, isExpanded]);
+  }, [isHovered]);
 
   useEffect(() => {
-    if ((isHovered || isExpanded) && videoRef.current && shouldLoadVideo) {
+    if (isHovered && videoRef.current && shouldLoadVideo) {
       isManuallyPausedRef.current = false;
       const timer = setTimeout(() => {
         if (videoRef.current && !isManuallyPausedRef.current) {
@@ -101,13 +93,13 @@ export function VideoCard({
         }
       }, 100);
       return () => clearTimeout(timer);
-    } else if (videoRef.current && !isHovered && !isExpanded) {
+    } else if (videoRef.current && !isHovered) {
       isManuallyPausedRef.current = false;
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
       setIsPlaying(false);
     }
-  }, [isHovered, isExpanded, shouldLoadVideo]);
+  }, [isHovered, shouldLoadVideo]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -139,14 +131,9 @@ export function VideoCard({
   }, [shouldLoadVideo]);
 
   useEffect(() => {
-    if (!isHovered && !isExpanded) return;
+    if (!isHovered) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isExpanded && e.key === "Escape") {
-        e.preventDefault();
-        onExpandToggle();
-        return;
-      }
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
       e.preventDefault();
       if (e.key === "ArrowLeft") skip(-5);
@@ -155,41 +142,9 @@ export function VideoCard({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isHovered, isExpanded, skip, onExpandToggle]);
+  }, [isHovered, skip]);
 
-  // FLIP: capture origin rect and trigger expand animation
-  useEffect(() => {
-    if (isExpanded) {
-      const rect = cardRef.current?.getBoundingClientRect();
-      if (rect) {
-        setOriginRect(rect);
-        setAnimatingIn(true);
-        setShowExpanded(true);
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            setAnimatingIn(false);
-          });
-        });
-      }
-    } else {
-      setAnimatingIn(true);
-      const timer = setTimeout(() => {
-        setShowExpanded(false);
-        setOriginRect(null);
-        setAnimatingIn(false);
-      }, DURATION);
-      return () => clearTimeout(timer);
-    }
-  }, [isExpanded]);
-
-  const handleCardClick = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest("[data-video-controls]")) return;
-    if ((e.target as HTMLElement).closest("button")) return;
-    if ((e.target as HTMLElement).closest("a")) return;
-    onExpandToggle();
-  };
-
-  const isActive = isHovered || isExpanded;
+  const isActive = isHovered;
 
   const videoControls = isActive && (
     <div
@@ -240,204 +195,15 @@ export function VideoCard({
     </div>
   );
 
-  const infoPanel = (expanded: boolean) => (
-    <div className={cn("relative px-8 flex flex-col justify-center py-5", expanded ? "min-h-0" : "min-h-[162px]")}>
-      {project.year && (
-        <div className="font-mono text-xs tracking-widest uppercase pb-1 text-muted-foreground">
-          {project.year}
-        </div>
-      )}
-
-      <div className="space-y-3">
-        {project.projectName && (
-          <h3 className={cn(
-            "font-mono uppercase font-medium leading-tight text-foreground",
-            expanded ? "text-xl sm:text-2xl" : "text-lg sm:text-xl",
-          )}>
-            {project.projectName}
-          </h3>
-        )}
-        {project.company && (
-          <div className="flex items-center gap-4 flex-wrap">
-            <p className="font-mono text-sm tracking-[0.15em] uppercase leading-relaxed text-muted-foreground">
-              {project.company}
-            </p>
-            {project.tech && project.tech.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {project.tech.map((tech, index) => (
-                  <span
-                    key={index}
-                    className="rounded-full border border-border bg-secondary px-2 py-1 text-xs text-muted-foreground"
-                  >
-                    {tech}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {expanded && project.fullDescription ? (
-        <div className="flex items-start justify-between gap-6 pt-4">
-          <p className="flex-1 text-sm leading-relaxed text-muted-foreground">
-            {project.fullDescription}
-          </p>
-          <div className="flex shrink-0 items-center gap-3 pr-4">
-            <ProjectActionButton
-              icon={<Github className="size-5" />}
-              url={project.githubUrl}
-              expanded
-            />
-          </div>
-        </div>
-      ) : (
-        project.shortDescription && (
-          <div className="flex items-start justify-between gap-6 pt-4">
-            <p className={cn(
-              "flex-[0_0_70%] text-sm leading-tight transition-colors duration-[800ms]",
-              isHovered ? "text-muted-foreground" : "text-white/70 line-clamp-2 md:line-clamp-none",
-            )}>
-              {project.shortDescription}
-            </p>
-            <div className="flex flex-[0_0_30%] items-center justify-end gap-3 pr-4">
-              <ProjectActionButton
-                icon={<Github className="size-5" />}
-                url={project.githubUrl}
-                expanded={isHovered}
-              />
-            </div>
-          </div>
-        )
-      )}
-    </div>
-  );
-
-  // Compute expanded overlay style with FLIP animation
-  const expandedStyle = (): React.CSSProperties => {
-    const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
-    const vh = typeof window !== "undefined" ? window.innerHeight : 800;
-
-    const targetLeft = vw * 0.1;
-    const targetWidth = vw * 0.8;
-    const targetTop = vh * 0.05;
-    const targetMaxHeight = vh * 0.9;
-
-    if (animatingIn && isExpanded && originRect) {
-      return {
-        position: "fixed",
-        top: originRect.top,
-        left: originRect.left,
-        width: originRect.width,
-        maxHeight: originRect.height,
-        zIndex: 60,
-        transition: `all ${DURATION}ms ${EASE}`,
-        overflow: "hidden",
-        borderRadius: "2.5rem",
-      };
-    }
-
-    if (!isExpanded && animatingIn && originRect) {
-      return {
-        position: "fixed",
-        top: originRect.top,
-        left: originRect.left,
-        width: originRect.width,
-        maxHeight: originRect.height,
-        zIndex: 60,
-        transition: `all ${DURATION}ms ${EASE}`,
-        overflow: "hidden",
-        borderRadius: "2.5rem",
-      };
-    }
-
-    return {
-      position: "fixed",
-      top: targetTop,
-      left: targetLeft,
-      width: targetWidth,
-      maxHeight: targetMaxHeight,
-      zIndex: 60,
-      transition: `all ${DURATION}ms ${EASE}`,
-      overflowY: "auto",
-      borderRadius: "2.5rem",
-    };
-  };
-
-  const expandedOverlay = showExpanded
-    ? createPortal(
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-50"
-            style={{
-              backgroundColor: `rgba(0,0,0,${isExpanded && !animatingIn ? 0.6 : 0})`,
-              transition: `background-color ${DURATION}ms ${EASE}`,
-            }}
-            onClick={onExpandToggle}
-          />
-          {/* Expanded card */}
-          <div
-            style={expandedStyle()}
-            className="bg-background shadow-2xl"
-          >
-            {/* Close button */}
-            <button
-              type="button"
-              onClick={onExpandToggle}
-              className="absolute top-4 right-4 z-30 p-2 rounded-full bg-black/50 text-white/90 hover:text-white hover:bg-black/70 transition-colors backdrop-blur-sm"
-              aria-label="Close expanded view"
-            >
-              <X className="size-5" />
-            </button>
-
-            {/* Video region */}
-            <div className="relative w-full overflow-hidden" style={{ height: "clamp(300px, 50vh, 600px)" }}>
-              {shouldLoadVideo ? (
-                <>
-                  <video
-                    ref={isExpanded ? videoRef : undefined}
-                    poster={project.thumbnail || undefined}
-                    className="absolute inset-0 h-full w-full object-cover"
-                    loop
-                    muted
-                    playsInline
-                    preload="metadata"
-                  >
-                    <source src={project.video} type="video/mp4" />
-                  </video>
-                  {videoControls}
-                </>
-              ) : (
-                <img
-                  src={project.thumbnail || "/placeholder-user.jpg"}
-                  alt={project.projectName || "Project thumbnail"}
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
-              )}
-            </div>
-
-            {/* Info panel */}
-            <div className="bg-background border-t border-border rounded-b-[2.5rem]">
-              {infoPanel(true)}
-            </div>
-          </div>
-        </>,
-        document.body,
-      )
-    : null;
 
   return (
-    <>
-      <div
+    <div
         ref={cardRef}
         className={cn(
           "group relative rounded-[2.5rem] overflow-hidden",
-          "cursor-none",
           "w-full",
           "will-change-transform",
           !isActive && "opacity-90",
-          showExpanded && "invisible",
         )}
         style={{
           transition: `opacity ${DURATION}ms ${EASE}, box-shadow ${DURATION}ms ${EASE}`,
@@ -446,8 +212,7 @@ export function VideoCard({
             : undefined,
         }}
         onMouseEnter={() => onHoverChange(true)}
-        onMouseLeave={() => { if (!isExpanded) onHoverChange(false); }}
-        onClick={handleCardClick}
+        onMouseLeave={() => onHoverChange(false)}
         data-video-card-id={project.id}
       >
         {/* Video region */}
@@ -460,7 +225,7 @@ export function VideoCard({
           {shouldLoadVideo ? (
             <>
               <video
-                ref={!showExpanded ? videoRef : undefined}
+                ref={videoRef}
                 poster={project.thumbnail || undefined}
                 className={cn(
                   "absolute inset-0 h-full w-full object-cover transition-all duration-700",
@@ -473,7 +238,7 @@ export function VideoCard({
               >
                 <source src={project.video} type="video/mp4" />
               </video>
-              {!showExpanded && videoControls}
+              {videoControls}
             </>
           ) : (
             <img
@@ -574,8 +339,5 @@ export function VideoCard({
           </div>
         </div>
       </div>
-
-      {expandedOverlay}
-    </>
   );
 }
