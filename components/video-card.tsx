@@ -2,7 +2,15 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import { Github, Play, Pause, RotateCcw, RotateCw } from "lucide-react";
+import {
+  Github,
+  Play,
+  Pause,
+  RotateCcw,
+  RotateCw,
+  Maximize,
+  Minimize,
+} from "lucide-react";
 import { ProjectActionButton } from "@/components/project-action-button";
 
 function formatTime(seconds: number): string {
@@ -42,12 +50,14 @@ export function VideoCard({
 }: VideoCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const videoRegionRef = useRef<HTMLDivElement>(null);
   const isManuallyPausedRef = useRef(false);
   const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const togglePlayPause = useCallback(() => {
     const video = videoRef.current;
@@ -76,6 +86,31 @@ export function VideoCard({
     const video = videoRef.current;
     if (!video || !Number.isFinite(video.duration)) return;
     video.currentTime = value * video.duration;
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    const target = videoRegionRef.current;
+    if (!target) return;
+
+    const doc = document as Document & {
+      webkitFullscreenElement?: Element | null;
+      webkitExitFullscreen?: () => Promise<void>;
+    };
+    const el = target as HTMLElement & {
+      webkitRequestFullscreen?: () => Promise<void>;
+    };
+
+    const fullscreenEl = doc.fullscreenElement ?? doc.webkitFullscreenElement;
+
+    if (!fullscreenEl) {
+      const request =
+        el.requestFullscreen?.bind(el) ?? el.webkitRequestFullscreen?.bind(el);
+      request?.().catch(() => {});
+    } else {
+      const exit =
+        doc.exitFullscreen?.bind(doc) ?? doc.webkitExitFullscreen?.bind(doc);
+      exit?.().catch(() => {});
+    }
   }, []);
 
   useEffect(() => {
@@ -146,7 +181,31 @@ export function VideoCard({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isHovered, skip]);
 
-  const isActive = isHovered;
+  useEffect(() => {
+    const target = videoRegionRef.current;
+    if (!target) return;
+
+    const handleFullscreenChange = () => {
+      const doc = document as Document & {
+        webkitFullscreenElement?: Element | null;
+      };
+      const fullscreenEl = doc.fullscreenElement ?? doc.webkitFullscreenElement;
+      setIsFullscreen(fullscreenEl === target);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener(
+        "webkitfullscreenchange",
+        handleFullscreenChange,
+      );
+    };
+  }, []);
+
+  const isActive = isHovered || isFullscreen;
 
   const videoControls = isActive && (
     <div
@@ -203,6 +262,21 @@ export function VideoCard({
           {formatTime(currentTime)} / {formatTime(duration)}
         </span>
       </div>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleFullscreen();
+        }}
+        className="p-2 rounded-full text-white/90 hover:text-white hover:bg-white/10 transition-colors"
+        aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+      >
+        {isFullscreen ? (
+          <Minimize className="size-4" />
+        ) : (
+          <Maximize className="size-4" />
+        )}
+      </button>
     </div>
   );
 
@@ -227,6 +301,7 @@ export function VideoCard({
     >
       {/* Video region */}
       <div
+        ref={videoRegionRef}
         className={cn(
           "relative w-full overflow-hidden bg-black transition-[height] duration-[800ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
           isHovered ? "h-[75vw] sm:h-[445px]" : "h-[202px]",
